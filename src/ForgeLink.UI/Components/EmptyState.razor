@@ -1,0 +1,14 @@
+<div class="fl-empty">
+    <Icon Name="@Icon" />
+    <strong>@Title</strong>
+    @if (ChildContent is not null)
+    {
+        <span>@ChildContent</span>
+    }
+</div>
+
+@code {
+    [Parameter] public string Icon { get; set; } = "info";
+    [Parameter, EditorRequired] public string Title { get; set; } = "";
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}

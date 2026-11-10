@@ -70,6 +70,14 @@ ForgeLink.Devices         scale protocol, ZPL labels, TCP/serial adapters + simu
 
 **Current status, where data lives and the integration roadmap: [docs/STATUS.md](docs/STATUS.md).**
 
+### Screenshots
+
+One design system (`src/ForgeLink.UI/wwwroot/forgelink.css` + an SVG icon sprite, light and dark themes, no CDN or web fonts so it works offline) is shared by the Blazor dashboard, the MVC console and the MAUI handheld. The WPF station uses the same palette.
+
+| WPF operator station | MAUI handheld (Windows) |
+|---|---|
+| ![WPF station](docs/images/station.png) | ![MAUI handheld](docs/images/handheld.png) |
+
 Deeper write-ups: [docs/architecture.md](docs/architecture.md) (data flows and sequence diagrams),
 [docs/operations.md](docs/operations.md) (deployment, change control, runbooks), and the
 [architecture decision records](docs/adr).

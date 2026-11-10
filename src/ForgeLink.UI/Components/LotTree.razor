@@ -1,9 +1,11 @@
 @* Recursive genealogy tree. *@
 <ul class="fl-tree">
     <li>
-        <span class="fl-pill fl-lot-@Node.Status.ToLowerInvariant()">@Node.Status</span>
-        <a href="lots/trace?lot=@Uri.EscapeDataString(Node.LotNumber)"><strong>@Node.LotNumber</strong></a>
-        <span class="fl-muted">@Node.Sku@(Node.WorkOrderNumber is null ? "" : $" · {Node.WorkOrderNumber}")@(Node.LinkQuantity is null ? "" : $" · qty {Format.Qty(Node.LinkQuantity.Value)}")</span>
+        <span class="fl-tree-node">
+            <span class="fl-pill fl-lot-@Node.Status.ToLowerInvariant()">@Node.Status</span>
+            <a href="lots/trace?lot=@Uri.EscapeDataString(Node.LotNumber)"><strong>@Node.LotNumber</strong></a>
+            <span class="fl-muted fl-small">@Node.Sku@(Node.WorkOrderNumber is null ? "" : $" · {Node.WorkOrderNumber}")@(Node.LinkQuantity is null ? "" : $" · qty {Format.Qty(Node.LinkQuantity.Value)}")</span>
+        </span>
         @foreach (var child in Node.Children)
         {
             <LotTree Node="child" />

@@ -3,23 +3,45 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
     <title>@ViewData["Title"] · ForgeLink</title>
     <link rel="stylesheet" href="~/_content/ForgeLink.UI/forgelink.css" />
+    <script src="~/_content/ForgeLink.UI/forgelink.js"></script>
+    <link rel="icon" type="image/svg+xml" href="~/_content/ForgeLink.UI/favicon.svg" />
 </head>
 <body>
+@{
+    var action = ViewContext.RouteData.Values["action"] as string;
+}
 <div class="fl-shell">
-    <nav class="fl-nav">
-        <div class="fl-brand">ForgeLink</div>
+    <nav class="fl-nav" aria-label="Main">
+        <a class="fl-brand" href="/">
+            <span class="fl-logo">@Html.Icon("logo")</span>
+            <span>ForgeLink<small>Shop floor ↔ ERP</small></span>
+        </a>
         <div class="fl-navsection">Operations</div>
-        <a href="/">Dashboard</a>
-        <a href="/machines">Machines</a>
-        <a href="/work-orders">Work orders</a>
-        <a href="/inventory">Inventory</a>
-        <div class="fl-navsection">Integration (MVC)</div>
-        <a asp-controller="Integration" asp-action="Index">Outbox &amp; sync</a>
-        <a asp-controller="Integration" asp-action="Audit">Audit trail</a>
-        <a href="/openapi/v1.json">OpenAPI</a>
-        <div class="fl-user">Signed in as @User.Identity?.Name</div>
+        <a href="/">@Html.Icon("dashboard")Plant overview</a>
+        <a href="/machines">@Html.Icon("machine")Machines</a>
+        <a href="/work-orders">@Html.Icon("workorder")Work orders</a>
+        <div class="fl-navsection">Materials &amp; quality</div>
+        <a href="/inventory">@Html.Icon("inventory")Inventory</a>
+        <a href="/inventory/move">@Html.Icon("move")Move material</a>
+        <a href="/inventory/count">@Html.Icon("count")Cycle count</a>
+        <a href="/quality">@Html.Icon("quality")Quality check</a>
+        <a href="/lots/trace">@Html.Icon("trace")Lot trace</a>
+        <div class="fl-navsection">Integration</div>
+        <a asp-controller="Integration" asp-action="Index" class="@(action is "Index" or "Details" ? "active" : "")">@Html.Icon("outbox")Outbox &amp; sync</a>
+        <a asp-controller="Integration" asp-action="Audit" class="@(action == "Audit" ? "active" : "")">@Html.Icon("audit")Audit trail</a>
+        <a href="/openapi/v1.json">@Html.Icon("api")OpenAPI</a>
+        <div class="fl-nav-foot">
+            <div class="fl-user">
+                <span class="fl-avatar">@Format.Initials(User.Identity?.Name)</span>
+                <span><strong>@User.Identity?.Name</strong>Signed in</span>
+            </div>
+            <button class="fl-icon-btn fl-theme-toggle" type="button" onclick="flToggleTheme()" aria-label="Toggle dark mode" title="Toggle dark mode">
+                @Html.Icon("moon", "fl-i-moon")@Html.Icon("sun", "fl-i-sun")
+            </button>
+        </div>
     </nav>
     <main class="fl-main">
         @RenderBody()

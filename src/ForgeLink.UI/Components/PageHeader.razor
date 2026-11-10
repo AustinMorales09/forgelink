@@ -1,0 +1,26 @@
+@* Consistent page title block: eyebrow (section), title, description and right-aligned actions. *@
+<header class="fl-page-head">
+    <div>
+        @if (!string.IsNullOrEmpty(Section))
+        {
+            <div class="fl-eyebrow">@if (!string.IsNullOrEmpty(Icon)) { <Icon Name="@Icon" /> }@Section</div>
+        }
+        <h1>@Title</h1>
+        @if (Description is not null)
+        {
+            <p>@Description</p>
+        }
+    </div>
+    @if (ChildContent is not null)
+    {
+        <div class="fl-page-actions">@ChildContent</div>
+    }
+</header>
+
+@code {
+    [Parameter, EditorRequired] public string Title { get; set; } = "";
+    [Parameter] public string? Section { get; set; }
+    [Parameter] public string? Icon { get; set; }
+    [Parameter] public RenderFragment? Description { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}

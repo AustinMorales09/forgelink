@@ -1,11 +1,14 @@
 @* Keyboard-wedge friendly scan box: scanners "type" the barcode then send Enter. *@
-<label class="fl-field">
+<label class="fl-field fl-grow">
     @if (!string.IsNullOrEmpty(Label))
     {
         <span>@Label</span>
     }
-    <input @ref="_input" class="fl-input fl-scan" placeholder="@Placeholder" autocomplete="off" inputmode="@InputMode"
-           @bind="_value" @bind:event="oninput" @onkeydown="OnKeyDownAsync" />
+    <span class="fl-scan-wrap">
+        <Icon Name="scan" />
+        <input @ref="_input" class="fl-input fl-scan" placeholder="@Placeholder" autocomplete="off" inputmode="@InputMode"
+               @bind="_value" @bind:event="oninput" @onkeydown="OnKeyDownAsync" />
+    </span>
 </label>
 
 @code {

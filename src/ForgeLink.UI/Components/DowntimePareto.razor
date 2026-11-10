@@ -1,6 +1,6 @@
 @if (Reasons.Count == 0)
 {
-    <p class="fl-muted">No downtime in this window.</p>
+    <EmptyState Icon="ok" Title="No downtime in this window" />
 }
 else
 {
@@ -12,9 +12,9 @@ else
         {
             cumulative += r.Minutes;
             <li>
-                <span class="fl-pareto-label">@r.ReasonCode</span>
-                <span class="fl-pareto-bar"><span style="width:@((r.Minutes / max * 100).ToString("0.#", CultureInfo.InvariantCulture))%"></span></span>
-                <span class="fl-pareto-value">@r.Minutes.ToString("0.#") min · @r.Occurrences× · @((cumulative / total * 100).ToString("0"))% cum.</span>
+                <span class="fl-pareto-label" title="@r.ReasonCode">@r.ReasonCode</span>
+                <span class="fl-pareto-bar"><span style="width:@Format.Width(r.Minutes / max)"></span></span>
+                <span class="fl-pareto-value">@r.Minutes.ToString("0.#") min · @r.Occurrences× · @((cumulative / total * 100).ToString("0"))% cumulative</span>
             </li>
         }
     </ul>

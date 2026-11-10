@@ -7,7 +7,8 @@
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type=vm:StationViewModel}"
         Title="ForgeLink Station" Width="1280" Height="820" WindowState="Maximized"
-        Background="{StaticResource Bg}" FontFamily="Segoe UI">
+        Background="{StaticResource Bg}" FontFamily="{StaticResource UiFont}"
+        TextOptions.TextFormattingMode="Display" UseLayoutRounding="True">
 
     <Window.InputBindings>
         <!-- F5 = sync now, F9 = report: large-key shortcuts for gloved operators / keypad overlays. -->
@@ -17,58 +18,82 @@
 
     <DockPanel>
         <!-- Header: station identity, machine state, connectivity, sync queue -->
-        <Border DockPanel.Dock="Top" Background="#0B1016" Padding="18,12" BorderBrush="{StaticResource Border}" BorderThickness="0,0,0,1">
+        <Border DockPanel.Dock="Top" Background="{StaticResource Chrome}" Padding="20,14" BorderBrush="{StaticResource Border}" BorderThickness="0,0,0,1">
             <DockPanel>
-                <StackPanel Orientation="Horizontal" DockPanel.Dock="Right">
-                    <Border CornerRadius="14" Padding="14,6" Margin="8,0">
+                <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" VerticalAlignment="Center">
+                    <Border Style="{StaticResource Chip}">
+                        <TextBlock FontSize="14" Foreground="{StaticResource Muted}">
+                            <Run Text="Queued " /><Run Text="{Binding PendingSync, Mode=OneWay}" FontWeight="Bold" Foreground="{StaticResource Text}" />
+                            <Run Text="   Rejected " /><Run Text="{Binding RejectedSync, Mode=OneWay}" FontWeight="Bold" Foreground="{StaticResource Text}" />
+                        </TextBlock>
+                    </Border>
+                    <Border Margin="8,0">
                         <Border.Style>
-                            <Style TargetType="Border">
-                                <Setter Property="Background" Value="{StaticResource Good}" />
+                            <Style TargetType="Border" BasedOn="{StaticResource Chip}">
+                                <Setter Property="Background" Value="{StaticResource GoodSoft}" />
+                                <Setter Property="BorderBrush" Value="{StaticResource Good}" />
                                 <Style.Triggers>
                                     <DataTrigger Binding="{Binding IsOnline}" Value="False">
                                         <Setter Property="Background" Value="{StaticResource Bad}" />
+                                        <Setter Property="BorderBrush" Value="{StaticResource Bad}" />
                                     </DataTrigger>
                                 </Style.Triggers>
                             </Style>
                         </Border.Style>
-                        <TextBlock FontWeight="Bold">
-                            <TextBlock.Style>
-                                <Style TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
-                                    <Setter Property="Text" Value="ONLINE" />
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding IsOnline}" Value="False">
-                                            <Setter Property="Text" Value="OFFLINE – saving locally" />
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </TextBlock.Style>
-                        </TextBlock>
+                        <StackPanel Orientation="Horizontal">
+                            <Ellipse Width="8" Height="8" Margin="0,0,8,0" VerticalAlignment="Center">
+                                <Ellipse.Style>
+                                    <Style TargetType="Ellipse">
+                                        <Setter Property="Fill" Value="{StaticResource Good}" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsOnline}" Value="False"><Setter Property="Fill" Value="White" /></DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Ellipse.Style>
+                            </Ellipse>
+                            <TextBlock FontWeight="SemiBold" FontSize="14">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
+                                        <Setter Property="Text" Value="Online" />
+                                        <Setter Property="Foreground" Value="{StaticResource Good}" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsOnline}" Value="False">
+                                                <Setter Property="Text" Value="OFFLINE – saving locally" />
+                                                <Setter Property="Foreground" Value="White" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </StackPanel>
                     </Border>
-                    <Border CornerRadius="14" Padding="14,6" Margin="8,0" Background="#2A3542">
-                        <TextBlock>
-                            <Run Text="Queued: " /><Run Text="{Binding PendingSync, Mode=OneWay}" FontWeight="Bold" />
-                            <Run Text="  Rejected: " /><Run Text="{Binding RejectedSync, Mode=OneWay}" FontWeight="Bold" />
-                        </TextBlock>
-                    </Border>
-                    <Button Content="Sync (F5)" Command="{Binding SyncNowCommand}" MinHeight="36" Margin="8,0,0,0" />
+                    <Button Content="Sync  (F5)" Command="{Binding SyncNowCommand}" Style="{StaticResource Compact}" />
                 </StackPanel>
-                <StackPanel Orientation="Horizontal">
-                    <TextBlock Text="{Binding Station.StationName}" FontSize="22" FontWeight="Bold" VerticalAlignment="Center" />
-                    <TextBlock Text="{Binding Station.MachineCode}" Foreground="{StaticResource Muted}" Margin="14,0" VerticalAlignment="Center" />
-                    <Border CornerRadius="14" Padding="14,6" Margin="8,0">
+
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <Border Width="38" Height="38" CornerRadius="11" Background="{StaticResource LogoBrush}" Margin="0,0,14,0">
+                        <Path Data="M9,7 H7 A5,5 0 0 0 7,17 H9 M15,7 H17 A5,5 0 0 1 17,17 H15 M8,12 H16" Stroke="White" StrokeThickness="2.4"
+                              StrokeStartLineCap="Round" StrokeEndLineCap="Round" Width="24" Height="24" Stretch="None" />
+                    </Border>
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="{Binding Station.StationName}" FontFamily="{StaticResource DisplayFont}" FontSize="20" FontWeight="SemiBold" />
+                        <TextBlock Text="{Binding Station.MachineCode}" Foreground="{StaticResource Muted}" FontSize="13" FontFamily="{StaticResource MonoFont}" />
+                    </StackPanel>
+                    <Border Margin="20,0,0,0">
                         <Border.Style>
-                            <Style TargetType="Border">
-                                <Setter Property="Background" Value="#4B5563" />
+                            <Style TargetType="Border" BasedOn="{StaticResource Chip}">
+                                <Setter Property="Background" Value="#2A3240" />
+                                <Setter Property="BorderBrush" Value="#3A4454" />
                                 <Style.Triggers>
-                                    <DataTrigger Binding="{Binding MachineState}" Value="Running"><Setter Property="Background" Value="{StaticResource Good}" /></DataTrigger>
-                                    <DataTrigger Binding="{Binding MachineState}" Value="Down"><Setter Property="Background" Value="{StaticResource Bad}" /></DataTrigger>
-                                    <DataTrigger Binding="{Binding MachineState}" Value="Idle"><Setter Property="Background" Value="{StaticResource Warn}" /></DataTrigger>
+                                    <DataTrigger Binding="{Binding MachineState}" Value="Running"><Setter Property="Background" Value="{StaticResource Good}" /><Setter Property="BorderBrush" Value="{StaticResource Good}" /></DataTrigger>
+                                    <DataTrigger Binding="{Binding MachineState}" Value="Down"><Setter Property="Background" Value="{StaticResource Bad}" /><Setter Property="BorderBrush" Value="{StaticResource Bad}" /></DataTrigger>
+                                    <DataTrigger Binding="{Binding MachineState}" Value="Idle"><Setter Property="Background" Value="{StaticResource Warn}" /><Setter Property="BorderBrush" Value="{StaticResource Warn}" /></DataTrigger>
                                 </Style.Triggers>
                             </Style>
                         </Border.Style>
-                        <TextBlock>
+                        <TextBlock FontSize="15" Foreground="White">
                             <Run Text="{Binding MachineState, Mode=OneWay}" FontWeight="Bold" />
-                            <Run Text="{Binding MachineReason, Mode=OneWay}" />
+                            <Run Text="{Binding MachineReason, Mode=OneWay}" FontFamily="{StaticResource MonoFont}" />
                         </TextBlock>
                     </Border>
                 </StackPanel>
@@ -76,61 +101,71 @@
         </Border>
 
         <!-- Event log -->
-        <Border DockPanel.Dock="Bottom" Style="{StaticResource Card}" Height="170">
-            <ListBox ItemsSource="{Binding Log}" Background="Transparent" BorderThickness="0">
-                <ListBox.ItemTemplate>
-                    <DataTemplate>
-                        <TextBlock Text="{Binding Display}" FontFamily="Cascadia Mono, Consolas" FontSize="14">
-                            <TextBlock.Style>
-                                <Style TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding Level}" Value="warn">
-                                            <Setter Property="Foreground" Value="{StaticResource Warn}" />
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </TextBlock.Style>
-                        </TextBlock>
-                    </DataTemplate>
-                </ListBox.ItemTemplate>
-            </ListBox>
+        <Border DockPanel.Dock="Bottom" Style="{StaticResource Card}" Height="150" Padding="18,12">
+            <Grid>
+                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="20" /><ColumnDefinition Width="420" /></Grid.ColumnDefinitions>
+                <DockPanel>
+                <TextBlock DockPanel.Dock="Top" Text="ACTIVITY" Style="{StaticResource Label}" Margin="0,0,0,6" />
+                <ListBox ItemsSource="{Binding Log}" Background="Transparent" BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Display}" FontFamily="{StaticResource MonoFont}" FontSize="13.5" Foreground="{StaticResource Muted}">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding Level}" Value="warn">
+                                                <Setter Property="Foreground" Value="{StaticResource Warn}" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </DockPanel>
+                <DockPanel Grid.Column="2">
+                    <TextBlock DockPanel.Dock="Top" Text="LAST LABEL (ZPL)" Style="{StaticResource Label}" Margin="0,0,0,6" />
+                    <TextBox Text="{Binding LastZpl, Mode=OneWay}" IsReadOnly="True" TextWrapping="Wrap" FontSize="11" FontFamily="{StaticResource MonoFont}" VerticalScrollBarVisibility="Auto" VerticalContentAlignment="Top" Padding="10,6" />
+                </DockPanel>
+            </Grid>
         </Border>
 
-        <Grid>
+        <Grid Margin="10,6,10,0">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="5*" />
-                <ColumnDefinition Width="4*" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
 
             <!-- Left: scan, operator, work order -->
             <StackPanel Grid.Column="0">
                 <Border Style="{StaticResource Card}">
                     <StackPanel>
-                        <TextBlock Style="{StaticResource Label}" Text="SCAN (badge EMP:…, work order WO-…, component lot label)" />
+                        <TextBlock Style="{StaticResource Label}" Margin="0,0,0,6" Text="SCAN  ·  badge EMP:…, work order WO-…, component lot label" />
                         <!-- Keyboard-wedge scanners type into this box and press Enter. It keeps focus between actions. -->
-                        <TextBox x:Name="ScanBox" Text="{Binding ScanText, UpdateSourceTrigger=PropertyChanged}" FontFamily="Cascadia Mono, Consolas" FontSize="24">
+                        <TextBox x:Name="ScanBox" Text="{Binding ScanText, UpdateSourceTrigger=PropertyChanged}" FontFamily="{StaticResource MonoFont}" FontSize="24" MinHeight="58">
                             <TextBox.InputBindings>
                                 <KeyBinding Key="Enter" Command="{Binding ProcessScanCommand}" />
                             </TextBox.InputBindings>
                         </TextBox>
                         <TextBlock Style="{StaticResource Label}" Text="OPERATOR" />
-                        <TextBlock Text="{Binding OperatorBadge, TargetNullValue='— scan badge —'}" FontSize="20" />
+                        <TextBlock Text="{Binding OperatorBadge, TargetNullValue='— scan badge —'}" FontSize="20" FontWeight="SemiBold" />
                     </StackPanel>
                 </Border>
 
                 <Border Style="{StaticResource Card}">
                     <StackPanel>
-                        <TextBlock Style="{StaticResource Label}" Text="WORK ORDER" />
-                        <TextBlock FontSize="30" FontWeight="Bold" Text="{Binding WorkOrder.Number, TargetNullValue='No work order loaded'}" />
-                        <TextBlock Foreground="{StaticResource Muted}">
-                            <Run Text="{Binding WorkOrder.Sku, Mode=OneWay}" /> <Run Text="{Binding WorkOrder.ItemDescription, Mode=OneWay}" />
+                        <TextBlock Style="{StaticResource Label}" Margin="0,0,0,4" Text="WORK ORDER" />
+                        <TextBlock FontFamily="{StaticResource DisplayFont}" FontSize="32" FontWeight="SemiBold" Text="{Binding WorkOrder.Number, TargetNullValue='No work order loaded'}" />
+                        <TextBlock Foreground="{StaticResource Muted}" Margin="0,2,0,0">
+                            <Run Text="{Binding WorkOrder.Sku, Mode=OneWay}" FontFamily="{StaticResource MonoFont}" /> <Run Text="{Binding WorkOrder.ItemDescription, Mode=OneWay}" />
                         </TextBlock>
-                        <ProgressBar Height="22" Margin="0,12,0,4" Maximum="100" Value="{Binding Progress, Mode=OneWay}" Foreground="{StaticResource Accent}" Background="{StaticResource Bg}" />
-                        <TextBlock>
-                            <Run Text="{Binding WorkOrder.QuantityCompleted, Mode=OneWay}" FontWeight="Bold" /><Run Text=" / " />
+                        <ProgressBar Margin="0,18,0,8" Maximum="100" Value="{Binding Progress, Mode=OneWay}" />
+                        <TextBlock FontSize="15" Foreground="{StaticResource Muted}">
+                            <Run Text="{Binding WorkOrder.QuantityCompleted, Mode=OneWay}" FontWeight="Bold" Foreground="{StaticResource Text}" /><Run Text=" / " />
                             <Run Text="{Binding WorkOrder.QuantityOrdered, Mode=OneWay}" /><Run Text=" " /><Run Text="{Binding WorkOrder.Uom, Mode=OneWay}" />
-                            <Run Text="   scrap " /><Run Text="{Binding WorkOrder.QuantityScrapped, Mode=OneWay}" />
-                            <Run Text="   status " /><Run Text="{Binding WorkOrder.Status, Mode=OneWay}" FontWeight="Bold" />
+                            <Run Text="     scrap " /><Run Text="{Binding WorkOrder.QuantityScrapped, Mode=OneWay}" Foreground="{StaticResource Text}" />
+                            <Run Text="     status " /><Run Text="{Binding WorkOrder.Status, Mode=OneWay}" FontWeight="Bold" Foreground="{StaticResource Text}" />
                         </TextBlock>
                         <WrapPanel Margin="0,16,0,0">
                             <Button Content="Start" Command="{Binding StartCommand}" Style="{StaticResource Primary}" />
@@ -144,44 +179,52 @@
             <!-- Right: production reporting -->
             <Border Grid.Column="1" Style="{StaticResource Card}">
                 <StackPanel>
-                    <TextBlock Text="Report production" FontSize="22" FontWeight="Bold" />
-                    <Grid Margin="0,6,0,0">
+                    <TextBlock Text="Report production" Style="{StaticResource CardTitle}" Margin="0,-4,0,0" />
+                    <Grid Margin="0,4,0,0">
                         <Grid.ColumnDefinitions><ColumnDefinition /><ColumnDefinition Width="16" /><ColumnDefinition /></Grid.ColumnDefinitions>
                         <StackPanel>
                             <TextBlock Style="{StaticResource Label}" Text="GOOD QTY" />
-                            <TextBox Text="{Binding GoodQuantity, UpdateSourceTrigger=PropertyChanged}" FontSize="28" />
+                            <TextBox Text="{Binding GoodQuantity, UpdateSourceTrigger=PropertyChanged}" FontSize="28" MinHeight="58" />
                         </StackPanel>
                         <StackPanel Grid.Column="2">
                             <TextBlock Style="{StaticResource Label}" Text="SCRAP QTY" />
-                            <TextBox Text="{Binding ScrapQuantity, UpdateSourceTrigger=PropertyChanged}" FontSize="28" />
+                            <TextBox Text="{Binding ScrapQuantity, UpdateSourceTrigger=PropertyChanged}" FontSize="28" MinHeight="58" />
                         </StackPanel>
                     </Grid>
-                    <TextBlock Style="{StaticResource Label}" Text="SCRAP REASON (required with scrap)" />
-                    <ComboBox IsEditable="True" Text="{Binding ScrapReason, UpdateSourceTrigger=PropertyChanged}" FontSize="18" MinHeight="44">
-                        <ComboBoxItem>DIMENSIONAL</ComboBoxItem>
-                        <ComboBoxItem>SURFACE_FINISH</ComboBoxItem>
-                        <ComboBoxItem>SETUP_PIECE</ComboBoxItem>
-                        <ComboBoxItem>MATERIAL_DEFECT</ComboBoxItem>
-                    </ComboBox>
-                    <Grid Margin="0,6,0,0">
+                    <TextBlock Style="{StaticResource Label}" Text="SCRAP REASON  ·  required with scrap" />
+                    <TextBox Text="{Binding ScrapReason, UpdateSourceTrigger=PropertyChanged}" FontFamily="{StaticResource MonoFont}" FontSize="18" />
+                    <WrapPanel Margin="0,8,0,0">
+                        <WrapPanel.Resources>
+                            <Style TargetType="Button" BasedOn="{StaticResource Compact}">
+                                <Setter Property="Margin" Value="0,0,8,0" />
+                                <Setter Property="FontFamily" Value="{StaticResource MonoFont}" />
+                                <Setter Property="FontSize" Value="12" />
+                                <Setter Property="Padding" Value="10,4" />
+                                <Setter Property="Command" Value="{Binding SetScrapReasonCommand}" />
+                                <Setter Property="CommandParameter" Value="{Binding Content, RelativeSource={RelativeSource Self}}" />
+                            </Style>
+                        </WrapPanel.Resources>
+                        <Button Content="DIMENSIONAL" />
+                        <Button Content="SURFACE_FINISH" />
+                        <Button Content="SETUP_PIECE" />
+                        <Button Content="MATERIAL_DEFECT" />
+                    </WrapPanel>
+                    <Grid Margin="0,4,0,0">
                         <Grid.ColumnDefinitions><ColumnDefinition Width="2*" /><ColumnDefinition Width="16" /><ColumnDefinition /></Grid.ColumnDefinitions>
                         <StackPanel>
-                            <TextBlock Style="{StaticResource Label}" Text="COMPONENT LOT (backflush)" />
-                            <TextBox Text="{Binding ComponentLot, UpdateSourceTrigger=PropertyChanged}" />
+                            <TextBlock Style="{StaticResource Label}" Text="COMPONENT LOT  ·  backflush" />
+                            <TextBox Text="{Binding ComponentLot, UpdateSourceTrigger=PropertyChanged}" FontFamily="{StaticResource MonoFont}" />
                         </StackPanel>
                         <StackPanel Grid.Column="2">
                             <TextBlock Style="{StaticResource Label}" Text="QTY USED" />
                             <TextBox Text="{Binding ComponentQuantity, UpdateSourceTrigger=PropertyChanged}" />
                         </StackPanel>
                     </Grid>
-                    <WrapPanel Margin="0,18,0,0">
+                    <WrapPanel Margin="0,16,0,0">
                         <Button Content="Weigh &amp; count" Command="{Binding ReadScaleCommand}" />
-                        <Button Content="Report (F9)" Command="{Binding ReportCommand}" Style="{StaticResource Primary}" MinWidth="180" />
+                        <Button Content="Report  (F9)" Command="{Binding ReportCommand}" Style="{StaticResource Primary}" MinWidth="180" />
                         <Button Content="Reprint label" Command="{Binding ReprintCommand}" />
-                    </WrapPanel>
-                    <TextBlock Style="{StaticResource Label}" Text="LAST LABEL (ZPL)" />
-                    <TextBox Text="{Binding LastZpl, Mode=OneWay}" IsReadOnly="True" TextWrapping="Wrap" FontSize="11" FontFamily="Cascadia Mono, Consolas" Height="110" VerticalScrollBarVisibility="Auto" />
-                </StackPanel>
+                    </WrapPanel>                </StackPanel>
             </Border>
         </Grid>
     </DockPanel>

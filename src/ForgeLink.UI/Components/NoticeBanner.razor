@@ -1,6 +1,9 @@
 @if (Notice is not null)
 {
-    <div class="@Notice.CssClass" role="@(Notice.Kind == NoticeKind.Error ? "alert" : "status")">@Notice.Message</div>
+    <div class="@Notice.CssClass" role="@(Notice.Kind == NoticeKind.Error ? "alert" : "status")">
+        <Icon Name="@(Notice.Kind switch { NoticeKind.Error => "alert", NoticeKind.Success => "ok", _ => "info" })" />
+        <span>@Notice.Message</span>
+    </div>
 }
 
 @code {

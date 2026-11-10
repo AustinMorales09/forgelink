@@ -18,68 +18,82 @@
             <option value="24">Last 24 h</option>
         </select>
     </label>
-    <span class="fl-muted">Updated @Format.Ago(LastRefreshUtc)</span>
+    <span class="fl-spacer"></span>
+    <LiveIndicator LastRefreshUtc="LastRefreshUtc" Stale="LoadError is not null" />
 </div>
 
 <NoticeBanner Notice="LoadError" />
 
 @if (_kpi is { } k)
 {
+    var oee = k.Oee;
     <section class="fl-kpis">
-        <div class="fl-kpi @Format.OeeClass(k.Oee.Oee)">
-            <span>OEE</span><strong>@Format.Pct(k.Oee.Oee)</strong>
-            <small>A @Format.Pct(k.Oee.Availability) · P @Format.Pct(k.Oee.Performance) · Q @Format.Pct(k.Oee.Quality)</small>
+        <div class="fl-kpi fl-kpi-wide @Format.OeeClass(oee.Oee)">
+            <div class="fl-kpi-head"><Icon Name="gauge" />OEE<span class="fl-tag @Format.OeeClass(oee.Oee)">@Format.OeeLabel(oee.Oee)</span></div>
+            <strong>@Format.Pct(oee.Oee)</strong>
+            <div class="fl-meters">
+                <div class="fl-meter">Availability <b>@Format.Pct(oee.Availability)</b><i style="--v:@Format.Width(oee.Availability)"></i></div>
+                <div class="fl-meter">Performance <b>@Format.Pct(oee.Performance)</b><i style="--v:@Format.Width(oee.Performance)"></i></div>
+                <div class="fl-meter">Quality <b>@Format.Pct(oee.Quality)</b><i style="--v:@Format.Width(oee.Quality)"></i></div>
+            </div>
         </div>
         <div class="fl-kpi">
-            <span>Good parts</span><strong>@k.Machines.Sum(m => m.GoodCount)</strong>
-            <small>@k.Machines.Sum(m => m.RejectCount) rejects</small>
+            <div class="fl-kpi-head"><Icon Name="ok" />Good parts</div>
+            <strong>@k.Machines.Sum(m => m.GoodCount).ToString("N0")</strong>
+            <small>@k.Machines.Sum(m => m.RejectCount).ToString("N0") rejects</small>
         </div>
         <div class="fl-kpi">
-            <span>Downtime</span><strong>@k.DowntimePareto.Sum(d => d.Minutes).ToString("0") min</strong>
+            <div class="fl-kpi-head"><Icon Name="clock" />Downtime</div>
+            <strong>@k.DowntimePareto.Sum(d => d.Minutes).ToString("0")<small>min</small></strong>
             <small>@k.DowntimePareto.Sum(d => d.Occurrences) stops</small>
         </div>
         <div class="fl-kpi @(k.InventoryAccuracyPercent is null ? "" : k.InventoryAccuracyPercent >= 98 ? "fl-good" : "fl-warn")">
-            <span>Inventory accuracy</span>
+            <div class="fl-kpi-head"><Icon Name="target" />Inventory accuracy</div>
             <strong>@(k.InventoryAccuracyPercent is null ? "—" : k.InventoryAccuracyPercent.Value.ToString("0.0") + "%")</strong>
             <small>@k.CycleCounts cycle counts</small>
         </div>
         <div class="fl-kpi @(k.Integration.DeadLettered > 0 ? "fl-bad" : k.Integration.Pending > 20 ? "fl-warn" : "fl-good")">
-            <span>ERP integration</span>
-            <strong>@k.Integration.Pending pending</strong>
+            <div class="fl-kpi-head"><Icon Name="sync" />ERP integration</div>
+            <strong>@k.Integration.Pending<small>pending</small></strong>
             <small>@k.Integration.DeadLettered dead-lettered · @k.Integration.SentLastHour sent/h</small>
         </div>
     </section>
 
-    <div class="fl-grid-2">
-        <section class="fl-card">
-            <h3>Machines</h3>
-            <table class="fl-table">
-                <thead><tr><th>Machine</th><th>State</th><th>OEE</th><th>Avail.</th><th>Perf.</th><th>Qual.</th><th>Down (min)</th></tr></thead>
-                <tbody>
-                @foreach (var m in k.Machines)
-                {
-                    <tr>
-                        <td>@m.MachineCode</td>
-                        <td><span class="fl-pill @Format.StateClass(m.State)">@m.State</span></td>
-                        <td class="@Format.OeeClass(m.Oee.Oee)">@Format.Pct(m.Oee.Oee)</td>
-                        <td>@Format.Pct(m.Oee.Availability)</td>
-                        <td>@Format.Pct(m.Oee.Performance)</td>
-                        <td>@Format.Pct(m.Oee.Quality)</td>
-                        <td>@m.DowntimeMinutes</td>
-                    </tr>
-                }
-                </tbody>
-            </table>
+    <div class="fl-grid-dash">
+        <section class="fl-card fl-card-flush">
+            <div class="fl-card-head"><h3><Icon Name="machine" />Machines</h3><span class="fl-muted fl-small">Line @_line</span></div>
+            <div class="fl-scroll">
+                <table class="fl-table">
+                    <thead><tr><th>Machine</th><th>State</th><th class="fl-num">OEE</th><th class="fl-num">Avail.</th><th class="fl-num">Perf.</th><th class="fl-num">Qual.</th><th class="fl-num">Down</th></tr></thead>
+                    <tbody>
+                    @foreach (var m in k.Machines)
+                    {
+                        <tr>
+                            <td><strong>@m.MachineCode</strong></td>
+                            <td><span class="fl-pill @Format.StateClass(m.State)">@m.State</span></td>
+                            <td class="fl-num @Format.OeeClass(m.Oee.Oee)"><strong>@Format.Pct(m.Oee.Oee)</strong></td>
+                            <td class="fl-num">@Format.Pct(m.Oee.Availability)</td>
+                            <td class="fl-num">@Format.Pct(m.Oee.Performance)</td>
+                            <td class="fl-num">@Format.Pct(m.Oee.Quality)</td>
+                            <td class="fl-num">@m.DowntimeMinutes min</td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
         </section>
 
         <section class="fl-card">
-            <h3>Downtime Pareto</h3>
+            <div class="fl-card-head"><h3><Icon Name="alert" />Downtime Pareto</h3><span class="fl-muted fl-small">by minutes lost</span></div>
             <DowntimePareto Reasons="k.DowntimePareto" />
         </section>
     </div>
 
     <section class="fl-card">
-        <h3>Hourly throughput</h3>
+        <div class="fl-card-head">
+            <h3><Icon Name="chart" />Hourly throughput</h3>
+            <div class="fl-legend"><span style="--c:var(--fl-chart-good)">Good</span><span style="--c:var(--fl-chart-bad)">Reject</span></div>
+        </div>
         <ThroughputChart Points="k.Throughput" />
     </section>
 }

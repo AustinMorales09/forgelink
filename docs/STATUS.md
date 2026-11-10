@@ -33,7 +33,7 @@ Legend: ✅ verified by running it · 🧪 covered by automated tests · 📝 wr
 | **MAUI Blazor Hybrid (Windows)**: home, lookup with live server data, offline indicator | ✅ |
 | **MAUI (Android)**: signed debug APK builds | 📝 not run on a device or emulator |
 | Offline store-and-forward client (SQLite queue, ordered replay with original keys, rejected-item quarantine) | 🧪 (integration test drains a queue into the live server) |
-| **WPF operator station**: badge / WO scanning, start / pause / complete, weigh-and-count, report, ZPL label, offline queue, F5/F9 keys | 📝 compiles; window never opened |
+| **WPF operator station**: badge / WO scanning, start / pause / complete, weigh-and-count, report, ZPL label, offline queue, F5/F9 keys | ✅ window opens, connects and shows live machine state · 📝 scan-to-report workflow not exercised by hand |
 | Device adapters: GS1-128 / DataMatrix scan parser, ZPL label builder (injection-safe), scale protocol parser, serial scale, TCP 9100 printer | 🧪 parsers / builders · 📝 real serial and TCP hardware |
 
 ### Tooling

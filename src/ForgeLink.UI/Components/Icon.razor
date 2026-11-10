@@ -1,0 +1,7 @@
+@* Inline icon from the shared sprite (wwwroot/icons.svg). Decorative: always pair with visible text or an aria-label on the parent. *@
+<svg class="fl-icon @Class" aria-hidden="true" focusable="false"><use href="@($"{IconSprite.Path}#{Name}")"></use></svg>
+
+@code {
+    [Parameter, EditorRequired] public string Name { get; set; } = "";
+    [Parameter] public string? Class { get; set; }
+}

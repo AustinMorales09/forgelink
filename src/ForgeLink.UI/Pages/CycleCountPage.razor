@@ -2,50 +2,61 @@
 @inject IForgeLinkApi Api
 
 <PageTitle>Cycle count · ForgeLink</PageTitle>
-<h1>Cycle count</h1>
-<p class="fl-muted">Blind count: the system quantity is not shown to the counter. Variances above tolerance go to a supervisor.</p>
+<PageHeader Section="Materials" Icon="count" Title="Cycle count">
+    <Description>Blind count: the system quantity is not shown to the counter. Variances above tolerance go to a supervisor.</Description>
+</PageHeader>
 
-<ScanInput Label="Scan location or lot label" AutoFocus OnScan="OnScan" />
-
-<div class="fl-form">
-    <label class="fl-field"><span>Location</span><input class="fl-input" @bind="_location" /></label>
-    <label class="fl-field"><span>SKU</span><input class="fl-input" @bind="_sku" /></label>
-    <label class="fl-field"><span>Lot</span><input class="fl-input" @bind="_lot" /></label>
-    <label class="fl-field"><span>Counted quantity</span><input class="fl-input" type="number" step="any" min="0" @bind="_counted" /></label>
-</div>
-<button class="fl-btn fl-btn-primary" disabled="@_busy" @onclick="SubmitAsync">Submit count</button>
+<section class="fl-card">
+    <div class="fl-toolbar"><ScanInput Label="Scan location or lot label" AutoFocus OnScan="OnScan" /></div>
+    <div class="fl-form">
+        <label class="fl-field"><span>Location</span><input class="fl-input" @bind="_location" /></label>
+        <label class="fl-field"><span>SKU</span><input class="fl-input" @bind="_sku" /></label>
+        <label class="fl-field"><span>Lot</span><input class="fl-input" @bind="_lot" /></label>
+        <label class="fl-field"><span>Counted quantity</span><input class="fl-input" type="number" step="any" min="0" @bind="_counted" /></label>
+    </div>
+    <div class="fl-form-actions">
+        <button class="fl-btn fl-btn-primary" disabled="@_busy" @onclick="SubmitAsync"><Icon Name="count" />Submit count</button>
+    </div>
+</section>
 <NoticeBanner Notice="_notice" />
 
-<h2>Pending supervisor approval</h2>
-@if (_pending.Count == 0)
-{
-    <p class="fl-muted">Nothing waiting.</p>
-}
-else
-{
-    <table class="fl-table">
-        <thead><tr><th>Counted</th><th>SKU</th><th>Location</th><th>Lot</th><th class="fl-num">System</th><th class="fl-num">Counted</th><th class="fl-num">Variance</th><th>By</th><th></th></tr></thead>
-        <tbody>
-        @foreach (var c in _pending)
-        {
-            <tr>
-                <td>@Format.Local(c.CountedAtUtc)</td>
-                <td>@c.Sku</td>
-                <td>@c.Location</td>
-                <td>@c.LotNumber</td>
-                <td class="fl-num">@Format.Qty(c.SystemQuantity)</td>
-                <td class="fl-num">@Format.Qty(c.CountedQuantity)</td>
-                <td class="fl-num @(c.Variance < 0 ? "fl-bad" : "fl-warn")">@Format.Qty(c.Variance)</td>
-                <td>@c.CountedBy</td>
-                <td class="fl-actions">
-                    <button class="fl-btn fl-btn-small" @onclick="() => ReviewAsync(c.Id, true)">Approve</button>
-                    <button class="fl-btn fl-btn-small fl-btn-ghost" @onclick="() => ReviewAsync(c.Id, false)">Reject</button>
-                </td>
-            </tr>
-        }
-        </tbody>
-    </table>
-}
+<section class="fl-card fl-card-flush">
+    <div class="fl-card-head">
+        <h3><Icon Name="clock" />Pending supervisor approval</h3>
+        <span class="fl-tag @(_pending.Count > 0 ? "fl-warn" : "fl-good")">@_pending.Count waiting</span>
+    </div>
+    @if (_pending.Count == 0)
+    {
+        <EmptyState Icon="ok" Title="Nothing waiting">Counts within tolerance post automatically.</EmptyState>
+    }
+    else
+    {
+        <div class="fl-scroll">
+            <table class="fl-table">
+                <thead><tr><th>Counted</th><th>SKU</th><th>Location</th><th>Lot</th><th class="fl-num">System</th><th class="fl-num">Counted</th><th class="fl-num">Variance</th><th>By</th><th></th></tr></thead>
+                <tbody>
+                @foreach (var c in _pending)
+                {
+                    <tr>
+                        <td class="fl-small">@Format.Local(c.CountedAtUtc)</td>
+                        <td><strong>@c.Sku</strong></td>
+                        <td class="fl-mono">@c.Location</td>
+                        <td class="fl-mono">@c.LotNumber</td>
+                        <td class="fl-num">@Format.Qty(c.SystemQuantity)</td>
+                        <td class="fl-num">@Format.Qty(c.CountedQuantity)</td>
+                        <td class="fl-num @(c.Variance < 0 ? "fl-bad" : "fl-warn")"><strong>@(c.Variance > 0 ? "+" : "")@Format.Qty(c.Variance)</strong></td>
+                        <td>@c.CountedBy</td>
+                        <td class="fl-actions">
+                            <button class="fl-btn fl-btn-small" @onclick="() => ReviewAsync(c.Id, true)"><Icon Name="ok" />Approve</button>
+                            <button class="fl-btn fl-btn-small fl-btn-ghost fl-btn-danger" @onclick="() => ReviewAsync(c.Id, false)">Reject</button>
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    }
+</section>
 
 @code {
     private string _location = "", _sku = "", _lot = "";

@@ -2,38 +2,53 @@
 @inject IForgeLinkApi Api
 
 <PageTitle>Inventory · ForgeLink</PageTitle>
-<h1>Inventory lookup</h1>
+<PageHeader Section="Materials" Icon="inventory" Title="Inventory lookup">
+    <Description>On-hand balances by item, location and lot. Lots on hold are flagged and cannot be issued.</Description>
+</PageHeader>
 
-<div class="fl-toolbar">
-    <ScanInput Label="Scan item, location or lot label" AutoFocus OnScan="OnScanAsync" />
-    <label class="fl-field"><span>SKU</span><input class="fl-input" @bind="_sku" /></label>
-    <label class="fl-field"><span>Location</span><input class="fl-input" @bind="_location" /></label>
-    <button class="fl-btn" @onclick="SearchAsync">Search</button>
-</div>
+<section class="fl-card">
+    <div class="fl-toolbar" style="margin:0">
+        <ScanInput Label="Scan item, location or lot label" AutoFocus OnScan="OnScanAsync" />
+        <label class="fl-field fl-inline"><span>SKU</span><input class="fl-input" @bind="_sku" placeholder="Any" /></label>
+        <label class="fl-field fl-inline"><span>Location</span><input class="fl-input" @bind="_location" placeholder="Any" /></label>
+        <button class="fl-btn fl-btn-primary" @onclick="SearchAsync"><Icon Name="search" />Search</button>
+    </div>
+</section>
 
 <NoticeBanner Notice="_notice" />
 
-<table class="fl-table">
-    <thead><tr><th>SKU</th><th>Location</th><th>Lot</th><th class="fl-num">Qty</th><th>Lot status</th><th></th></tr></thead>
-    <tbody>
-    @foreach (var b in _balances)
-    {
-        <tr class="@(b.LotStatus == "Available" ? "" : "fl-row-hold")">
-            <td>@b.Sku</td>
-            <td>@b.Location</td>
-            <td>@b.LotNumber</td>
-            <td class="fl-num">@Format.Qty(b.Quantity)</td>
-            <td><span class="fl-pill fl-lot-@b.LotStatus.ToLowerInvariant()">@b.LotStatus</span></td>
-            <td>
-                @if (!string.IsNullOrEmpty(b.LotNumber))
+@if (_balances.Count > 0)
+{
+    <section class="fl-card fl-card-flush">
+        <div class="fl-card-head">
+            <h3><Icon Name="inventory" />@_balances.Count balances</h3>
+            <span class="fl-muted fl-small">@_balances.Count(b => b.LotStatus != "Available") on hold</span>
+        </div>
+        <div class="fl-scroll">
+            <table class="fl-table">
+                <thead><tr><th>SKU</th><th>Location</th><th>Lot</th><th class="fl-num">Qty</th><th>Lot status</th><th></th></tr></thead>
+                <tbody>
+                @foreach (var b in _balances)
                 {
-                    <a href="lots/trace?lot=@Uri.EscapeDataString(b.LotNumber)">Trace</a>
+                    <tr class="@(b.LotStatus == "Available" ? "" : "fl-row-hold")">
+                        <td><strong>@b.Sku</strong></td>
+                        <td class="fl-mono">@b.Location</td>
+                        <td class="fl-mono">@b.LotNumber</td>
+                        <td class="fl-num"><strong>@Format.Qty(b.Quantity)</strong></td>
+                        <td><span class="fl-pill fl-lot-@b.LotStatus.ToLowerInvariant()">@b.LotStatus</span></td>
+                        <td class="fl-actions">
+                            @if (!string.IsNullOrEmpty(b.LotNumber))
+                            {
+                                <a class="fl-btn fl-btn-small fl-btn-ghost" href="lots/trace?lot=@Uri.EscapeDataString(b.LotNumber)"><Icon Name="trace" />Trace</a>
+                            }
+                        </td>
+                    </tr>
                 }
-            </td>
-        </tr>
-    }
-    </tbody>
-</table>
+                </tbody>
+            </table>
+        </div>
+    </section>
+}
 
 @code {
     private IReadOnlyList<InventoryBalanceDto> _balances = [];

@@ -4,64 +4,94 @@
     var h = Model.Health;
 }
 
-<h1>ERP integration console</h1>
-<p class="fl-muted">Transactional outbox to the ERP. Messages for the same SKU / work order are delivered in order; a dead letter blocks its partition until resolved.</p>
+<header class="fl-page-head">
+    <div>
+        <div class="fl-eyebrow">@Html.Icon("outbox")Integration</div>
+        <h1>ERP integration console</h1>
+        <p>Transactional outbox to the ERP. Messages for the same SKU / work order are delivered in order; a dead letter blocks only its own partition until resolved.</p>
+    </div>
+    <div class="fl-page-actions">
+        <form asp-action="SyncNow" method="post">
+            <button class="fl-btn fl-btn-primary" type="submit">@Html.Icon("sync")Sync master data now</button>
+        </form>
+    </div>
+</header>
 
 @if (!string.IsNullOrEmpty(Model.Flash))
 {
-    <div class="fl-banner fl-banner-success">@Model.Flash</div>
+    <div class="fl-banner fl-banner-success" role="status">@Html.Icon("ok")<span>@Model.Flash</span></div>
 }
 
 <section class="fl-kpis">
-    <div class="fl-kpi @(h.Pending > 20 ? "fl-warn" : "fl-good")"><span>Pending</span><strong>@h.Pending</strong><small>oldest @(h.OldestPendingMinutes?.ToString("0.0") ?? "—") min</small></div>
-    <div class="fl-kpi @(h.DeadLettered > 0 ? "fl-bad" : "fl-good")"><span>Dead-lettered</span><strong>@h.DeadLettered</strong><small>need a person</small></div>
-    <div class="fl-kpi"><span>Sent last hour</span><strong>@h.SentLastHour</strong><small>acknowledged by ERP</small></div>
+    <div class="fl-kpi @(h.Pending > 20 ? "fl-warn" : "fl-good")">
+        <div class="fl-kpi-head">@Html.Icon("clock")Pending</div>
+        <strong>@h.Pending</strong>
+        <small>oldest @(h.OldestPendingMinutes?.ToString("0.0") ?? "—") min</small>
+    </div>
+    <div class="fl-kpi @(h.DeadLettered > 0 ? "fl-bad" : "fl-good")">
+        <div class="fl-kpi-head">@Html.Icon("alert")Dead-lettered</div>
+        <strong>@h.DeadLettered</strong>
+        <small>@(h.DeadLettered > 0 ? "need a person" : "nothing blocked")</small>
+    </div>
+    <div class="fl-kpi">
+        <div class="fl-kpi-head">@Html.Icon("ok")Sent last hour</div>
+        <strong>@h.SentLastHour</strong>
+        <small>acknowledged by ERP</small>
+    </div>
     @foreach (var s in h.Syncs)
     {
         <div class="fl-kpi @(s.LastError is null ? "fl-good" : "fl-bad")">
-            <span>@s.Name</span>
-            <strong>@s.RecordsLastRun</strong>
-            <small>@(s.LastError ?? $"ok · watermark {s.WatermarkUtc:yyyy-MM-dd HH:mm}Z")</small>
+            <div class="fl-kpi-head">@Html.Icon("sync")@s.Name</div>
+            <strong>@s.RecordsLastRun<small>records</small></strong>
+            <small>@(s.LastError ?? $"watermark {s.WatermarkUtc:yyyy-MM-dd HH:mm}Z")</small>
         </div>
     }
 </section>
 
-<div class="fl-toolbar" style="margin-top:1rem">
-    <div class="fl-filter">
-        <a asp-action="Index" class="@(Model.Filter is null ? "active" : "")">All</a>
-        @foreach (var s in Enum.GetValues<OutboxStatus>())
-        {
-            <a asp-action="Index" asp-route-status="@s" class="@(Model.Filter == s ? "active" : "")">@s</a>
-        }
+<section class="fl-card fl-card-flush">
+    <div class="fl-card-head">
+        <div class="fl-filter" role="group" aria-label="Status">
+            <a asp-action="Index" class="@(Model.Filter is null ? "active" : "")">All</a>
+            @foreach (var s in Enum.GetValues<OutboxStatus>())
+            {
+                <a asp-action="Index" asp-route-status="@s" class="@(Model.Filter == s ? "active" : "")">@s</a>
+            }
+        </div>
+        <span class="fl-muted fl-small">@Model.Messages.Count messages</span>
     </div>
-    <form asp-action="SyncNow" method="post">
-        <button class="fl-btn" type="submit">Sync master data now</button>
-    </form>
-</div>
-
-<table class="fl-table">
-    <thead>
-    <tr><th>#</th><th>Type</th><th>Partition</th><th>Status</th><th class="fl-num">Attempts</th><th>Created</th><th>Next / sent</th><th>ERP ref / last error</th><th></th></tr>
-    </thead>
-    <tbody>
-    @foreach (var m in Model.Messages)
+    @if (Model.Messages.Count == 0)
     {
-        <tr class="@(m.Status == "DeadLettered" ? "fl-row-hold" : "")">
-            <td><a asp-action="Details" asp-route-id="@m.Id">@m.Id</a></td>
-            <td>@m.MessageType</td>
-            <td>@m.PartitionKey</td>
-            <td>@m.Status</td>
-            <td class="fl-num">@m.Attempts</td>
-            <td>@m.CreatedAtUtc.ToString("MM-dd HH:mm:ss")Z</td>
-            <td>@(m.SentAtUtc?.ToString("HH:mm:ss") ?? m.NextAttemptAtUtc.ToString("HH:mm:ss"))Z</td>
-            <td>@(m.ErpReference ?? m.LastError)</td>
-            <td>
-                @if (m.Status == "DeadLettered")
-                {
-                    <form asp-action="Retry" asp-route-id="@m.Id" method="post"><button class="fl-btn fl-btn-small" type="submit">Retry</button></form>
-                }
-            </td>
-        </tr>
+        <div class="fl-empty">@Html.Icon("ok")<strong>No messages</strong><span>Nothing matches this filter.</span></div>
     }
-    </tbody>
-</table>
+    else
+    {
+        <div class="fl-scroll">
+            <table class="fl-table">
+                <thead>
+                <tr><th>#</th><th>Type</th><th>Partition</th><th>Status</th><th class="fl-num">Attempts</th><th>Created</th><th>Next / sent</th><th>ERP ref / last error</th><th></th></tr>
+                </thead>
+                <tbody>
+                @foreach (var m in Model.Messages)
+                {
+                    <tr class="@(m.Status == "DeadLettered" ? "fl-row-hold" : "")">
+                        <td><a asp-action="Details" asp-route-id="@m.Id"><strong>@m.Id</strong></a></td>
+                        <td>@m.MessageType</td>
+                        <td class="fl-mono">@m.PartitionKey</td>
+                        <td><span class="fl-pill fl-st-@m.Status.ToLowerInvariant()">@m.Status</span></td>
+                        <td class="fl-num">@m.Attempts</td>
+                        <td class="fl-small fl-mono">@m.CreatedAtUtc.ToString("MM-dd HH:mm:ss")Z</td>
+                        <td class="fl-small fl-mono">@(m.SentAtUtc?.ToString("HH:mm:ss") ?? m.NextAttemptAtUtc.ToString("HH:mm:ss"))Z</td>
+                        <td class="fl-small @(m.ErpReference is null && m.LastError is not null ? "fl-bad" : "")">@(m.ErpReference ?? m.LastError)</td>
+                        <td class="fl-actions">
+                            @if (m.Status == "DeadLettered")
+                            {
+                                <form asp-action="Retry" asp-route-id="@m.Id" method="post"><button class="fl-btn fl-btn-small" type="submit">@Html.Icon("sync")Retry</button></form>
+                            }
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    }
+</section>

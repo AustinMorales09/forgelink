@@ -2,61 +2,80 @@
 @inject IForgeLinkApi Api
 
 <PageTitle>Lot trace · ForgeLink</PageTitle>
-<h1>Lot traceability</h1>
+<PageHeader Section="Quality" Icon="trace" Title="Lot traceability">
+    <Description>Genealogy in both directions: what went into a lot, and every lot it went into (recall scope).</Description>
+</PageHeader>
 
-<ScanInput Label="Scan or enter a lot" AutoFocus OnScan="OnScanAsync" />
+<section class="fl-card">
+    <div class="fl-toolbar" style="margin:0"><ScanInput Label="Scan or enter a lot" AutoFocus OnScan="OnScanAsync" /></div>
+</section>
 <NoticeBanner Notice="_notice" />
 
 @if (_trace is { } t)
 {
     <div class="fl-grid-2">
         <section class="fl-card">
-            <h3>Components (what went in)</h3>
+            <div class="fl-card-head"><h3><Icon Name="trace" />Components</h3><span class="fl-muted fl-small">what went in</span></div>
             <LotTree Node="t.Components" />
         </section>
         <section class="fl-card">
-            <h3>Where used (recall scope)</h3>
+            <div class="fl-card-head"><h3><Icon Name="alert" />Where used</h3><span class="fl-muted fl-small">recall scope</span></div>
             <LotTree Node="t.WhereUsed" />
         </section>
     </div>
 
-    <section class="fl-card">
-        <h3>On hand</h3>
-        @if (t.OnHand.Count == 0)
-        {
-            <p class="fl-muted">None on hand.</p>
-        }
-        else
-        {
-            <ul>@foreach (var b in t.OnHand) { <li>@Format.Qty(b.Quantity) at @b.Location (@b.LotStatus)</li> }</ul>
-        }
-    </section>
+    <div class="fl-grid-2">
+        <section class="fl-card">
+            <div class="fl-card-head"><h3><Icon Name="inventory" />On hand</h3></div>
+            @if (t.OnHand.Count == 0)
+            {
+                <EmptyState Icon="inventory" Title="None on hand" />
+            }
+            else
+            {
+                <ul class="fl-list">
+                    @foreach (var b in t.OnHand)
+                    {
+                        <li><span><strong>@Format.Qty(b.Quantity)</strong> at <span class="fl-mono">@b.Location</span></span><span class="fl-pill fl-lot-@b.LotStatus.ToLowerInvariant()">@b.LotStatus</span></li>
+                    }
+                </ul>
+            }
+        </section>
 
+        <section class="fl-card fl-card-flush">
+            <div class="fl-card-head"><h3><Icon Name="quality" />Inspections</h3><span class="fl-muted fl-small">@t.QualityChecks.Count recorded</span></div>
+            @if (t.QualityChecks.Count == 0)
+            {
+                <EmptyState Icon="quality" Title="No inspections recorded" />
+            }
+            else
+            {
+                <div class="fl-scroll">
+                    <table class="fl-table">
+                        <thead><tr><th>When</th><th>Characteristic</th><th class="fl-num">Measured</th><th>Spec</th><th>Result</th><th>Inspector</th></tr></thead>
+                        <tbody>
+                        @foreach (var q in t.QualityChecks)
+                        {
+                            <tr>
+                                <td class="fl-small">@Format.Local(q.CheckedAtUtc)</td>
+                                <td>@q.Characteristic</td>
+                                <td class="fl-num"><strong>@q.Measured</strong></td>
+                                <td class="fl-small">@q.LowerLimit – @q.UpperLimit</td>
+                                <td><span class="fl-pill @(q.Result == "Pass" ? "fl-lot-available" : "fl-lot-rejected")">@q.Result</span></td>
+                                <td>@q.Inspector</td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </section>
+    </div>
+}
+else if (_notice is null)
+{
     <section class="fl-card">
-        <h3>Inspections</h3>
-        @if (t.QualityChecks.Count == 0)
-        {
-            <p class="fl-muted">No inspections recorded.</p>
-        }
-        else
-        {
-            <table class="fl-table">
-                <thead><tr><th>When</th><th>Characteristic</th><th class="fl-num">Measured</th><th>Spec</th><th>Result</th><th>Inspector</th></tr></thead>
-                <tbody>
-                @foreach (var q in t.QualityChecks)
-                {
-                    <tr>
-                        <td>@Format.Local(q.CheckedAtUtc)</td>
-                        <td>@q.Characteristic</td>
-                        <td class="fl-num">@q.Measured</td>
-                        <td>@q.LowerLimit – @q.UpperLimit</td>
-                        <td class="@(q.Result == "Pass" ? "fl-good" : "fl-bad")">@q.Result</td>
-                        <td>@q.Inspector</td>
-                    </tr>
-                }
-                </tbody>
-            </table>
-        }
+        <EmptyState Icon="scan" Title="Scan a lot to see its genealogy">Try <code>WO-24001-@DateTime.UtcNow.ToString("yyMMdd")</code> or a bar-stock heat lot from the inventory page.</EmptyState>
     </section>
 }
 

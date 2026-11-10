@@ -2,26 +2,29 @@
 @inject IForgeLinkApi Api
 
 <PageTitle>Move material · ForgeLink</PageTitle>
-<h1>Move material</h1>
-<p class="fl-muted">Scan a ForgeLink lot label (GS1-128) to fill item, lot and quantity, then scan the from and to locations.</p>
+<PageHeader Section="Materials" Icon="move" Title="Move material">
+    <Description>Scan a ForgeLink lot label (GS1-128) to fill item, lot and quantity, then scan the from and to locations.</Description>
+</PageHeader>
 
-<ScanInput Label="Scan" AutoFocus OnScan="OnScan" />
-
-<div class="fl-form">
-    <label class="fl-field"><span>SKU</span><input class="fl-input" @bind="_sku" /></label>
-    <label class="fl-field"><span>Lot</span><input class="fl-input" @bind="_lot" /></label>
-    <label class="fl-field"><span>From location</span><input class="fl-input" @bind="_from" /></label>
-    <label class="fl-field"><span>To location</span><input class="fl-input" @bind="_to" /></label>
-    <label class="fl-field"><span>Quantity</span><input class="fl-input" type="number" step="any" min="0" @bind="_qty" /></label>
-</div>
-
-<button class="fl-btn fl-btn-primary" disabled="@_busy" @onclick="SubmitAsync">Move</button>
+<section class="fl-card">
+    <div class="fl-toolbar"><ScanInput Label="Scan" AutoFocus OnScan="OnScan" /></div>
+    <div class="fl-form">
+        <label class="fl-field"><span>SKU</span><input class="fl-input" @bind="_sku" /></label>
+        <label class="fl-field"><span>Lot</span><input class="fl-input" @bind="_lot" /></label>
+        <label class="fl-field"><span>From location</span><input class="fl-input" @bind="_from" /></label>
+        <label class="fl-field"><span>To location</span><input class="fl-input" @bind="_to" /></label>
+        <label class="fl-field"><span>Quantity</span><input class="fl-input" type="number" step="any" min="0" @bind="_qty" /></label>
+    </div>
+    <div class="fl-form-actions">
+        <button class="fl-btn fl-btn-primary" disabled="@_busy" @onclick="SubmitAsync"><Icon Name="move" />Post move</button>
+        <button class="fl-btn fl-btn-ghost" disabled="@_busy" @onclick="Reset">Clear</button>
+        @if (_last is { } t)
+        {
+            <span class="fl-muted fl-small">Last: @Format.Qty(t.Quantity) × @t.Sku lot @t.LotNumber, @t.FromLocation → @t.ToLocation (txn <span class="fl-mono">@t.Id.ToString("N")[..8]</span>)</span>
+        }
+    </div>
+</section>
 <NoticeBanner Notice="_notice" />
-
-@if (_last is { } t)
-{
-    <p class="fl-muted">Last move: @Format.Qty(t.Quantity) × @t.Sku lot @t.LotNumber, @t.FromLocation → @t.ToLocation (txn @t.Id.ToString("N")[..8])</p>
-}
 
 @code {
     private string _sku = "", _lot = "", _from = "", _to = "";

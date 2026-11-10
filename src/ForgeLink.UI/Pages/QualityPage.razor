@@ -2,21 +2,26 @@
 @inject IForgeLinkApi Api
 
 <PageTitle>Quality check · ForgeLink</PageTitle>
-<h1>In-process inspection</h1>
-<p class="fl-muted">An out-of-spec measurement puts the lot on hold immediately and notifies the ERP.</p>
+<PageHeader Section="Quality" Icon="quality" Title="In-process inspection">
+    <Description>An out-of-spec measurement puts the lot on hold immediately and notifies the ERP.</Description>
+</PageHeader>
 
-<ScanInput Label="Scan work order or lot label" AutoFocus OnScan="OnScan" />
-
-<div class="fl-form">
-    <label class="fl-field"><span>Work order</span><input class="fl-input" @bind="_wo" /></label>
-    <label class="fl-field"><span>Lot</span><input class="fl-input" @bind="_lot" /></label>
-    <label class="fl-field"><span>Characteristic</span><input class="fl-input" @bind="_characteristic" /></label>
-    <label class="fl-field"><span>Nominal</span><input class="fl-input" type="number" step="any" @bind="_nominal" /></label>
-    <label class="fl-field"><span>Lower limit</span><input class="fl-input" type="number" step="any" @bind="_lsl" /></label>
-    <label class="fl-field"><span>Upper limit</span><input class="fl-input" type="number" step="any" @bind="_usl" /></label>
-    <label class="fl-field"><span>Measured</span><input class="fl-input" type="number" step="any" @bind="_measured" /></label>
-</div>
-<button class="fl-btn fl-btn-primary" @onclick="SubmitAsync">Record</button>
+<section class="fl-card">
+    <div class="fl-toolbar"><ScanInput Label="Scan work order or lot label" AutoFocus OnScan="OnScan" /></div>
+    <div class="fl-form">
+        <label class="fl-field"><span>Work order</span><input class="fl-input" @bind="_wo" /></label>
+        <label class="fl-field"><span>Lot</span><input class="fl-input" @bind="_lot" /></label>
+        <label class="fl-field fl-span-2"><span>Characteristic</span><input class="fl-input" @bind="_characteristic" /></label>
+        <label class="fl-field"><span>Nominal</span><input class="fl-input" type="number" step="any" @bind="_nominal" /></label>
+        <label class="fl-field"><span>Lower limit</span><input class="fl-input" type="number" step="any" @bind="_lsl" /></label>
+        <label class="fl-field"><span>Upper limit</span><input class="fl-input" type="number" step="any" @bind="_usl" /></label>
+        <label class="fl-field"><span>Measured</span><input class="fl-input" type="number" step="any" @bind="_measured" /></label>
+    </div>
+    <div class="fl-form-actions">
+        <button class="fl-btn fl-btn-primary" @onclick="SubmitAsync"><Icon Name="quality" />Record measurement</button>
+        <span class="fl-muted fl-small">Tolerance band @_lsl – @_usl</span>
+    </div>
+</section>
 <NoticeBanner Notice="_notice" />
 
 @code {

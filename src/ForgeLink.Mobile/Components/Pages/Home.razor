@@ -1,40 +1,51 @@
 @page "/"
 @inject StoreAndForwardForgeLinkApi Api
 
-<h1>Handheld</h1>
-<p class="fl-muted">Material movement, cycle counts and lot lookup. Works offline: scans are saved on the device and synced when Wi-Fi returns.</p>
+<PageHeader Section="Handheld" Icon="scan" Title="What are you doing?">
+    <Description>Works offline: scans are saved on the device and synced when Wi-Fi returns.</Description>
+</PageHeader>
 
 <div class="m-tiles">
-    <a class="m-tile" href="inventory/move"><strong>Move material</strong><span>Scan label → from → to</span></a>
-    <a class="m-tile" href="inventory/count"><strong>Cycle count</strong><span>Blind count a location</span></a>
-    <a class="m-tile" href="inventory"><strong>Lookup</strong><span>What's in this location?</span></a>
-    <a class="m-tile" href="lots/trace"><strong>Lot trace</strong><span>Genealogy &amp; holds</span></a>
-    <a class="m-tile" href="quality"><strong>Inspection</strong><span>Record a measurement</span></a>
-    <a class="m-tile" href="dashboard"><strong>Line KPIs</strong><span>OEE &amp; downtime</span></a>
+    <a class="m-tile" href="inventory/move"><span class="m-tile-icon"><Icon Name="move" /></span><strong>Move material</strong><span>Scan label → from → to</span></a>
+    <a class="m-tile" href="inventory/count"><span class="m-tile-icon"><Icon Name="count" /></span><strong>Cycle count</strong><span>Blind count a location</span></a>
+    <a class="m-tile" href="inventory"><span class="m-tile-icon"><Icon Name="search" /></span><strong>Lookup</strong><span>What's in this location?</span></a>
+    <a class="m-tile" href="lots/trace"><span class="m-tile-icon"><Icon Name="trace" /></span><strong>Lot trace</strong><span>Genealogy &amp; holds</span></a>
+    <a class="m-tile" href="quality"><span class="m-tile-icon"><Icon Name="quality" /></span><strong>Inspection</strong><span>Record a measurement</span></a>
+    <a class="m-tile" href="dashboard"><span class="m-tile-icon"><Icon Name="gauge" /></span><strong>Line KPIs</strong><span>OEE &amp; downtime</span></a>
 </div>
 
-<h2>Sync queue</h2>
-<NoticeBanner Notice="_notice" />
-@if (_queued.Count == 0)
-{
-    <p class="fl-muted">Everything is synced.</p>
-}
-else
-{
-    <ul class="m-queue">
-        @foreach (var q in _queued)
-        {
-            <li class="@(q.State == QueuedCommandState.Rejected ? "fl-bad" : "")">
-                <strong>@q.Kind</strong> @q.Target · @q.CreatedUtc.ToLocalTime().ToString("HH:mm")
-                @if (q.LastError is not null)
-                {
-                    <br /><small>@q.State: @q.LastError</small>
-                }
-            </li>
-        }
-    </ul>
-}
-<button class="fl-btn fl-btn-primary" @onclick="SyncAsync">Sync now</button>
+<section class="fl-card">
+    <div class="fl-card-head">
+        <h3><Icon Name="sync" />Sync queue</h3>
+        <span class="fl-tag @(_queued.Count == 0 ? "fl-good" : "fl-warn")">@(_queued.Count == 0 ? "All synced" : $"{_queued.Count} waiting")</span>
+    </div>
+    <NoticeBanner Notice="_notice" />
+    @if (_queued.Count == 0)
+    {
+        <EmptyState Icon="ok" Title="Everything is synced" />
+    }
+    else
+    {
+        <ul class="fl-list">
+            @foreach (var q in _queued)
+            {
+                <li class="@(q.State == QueuedCommandState.Rejected ? "fl-bad" : "")">
+                    <span>
+                        <strong>@q.Kind</strong> <span class="fl-mono">@q.Target</span>
+                        @if (q.LastError is not null)
+                        {
+                            <span class="fl-sub">@q.State: @q.LastError</span>
+                        }
+                    </span>
+                    <span class="fl-muted fl-small">@q.CreatedUtc.ToLocalTime().ToString("HH:mm")</span>
+                </li>
+            }
+        </ul>
+    }
+    <div class="fl-form-actions">
+        <button class="fl-btn fl-btn-primary" @onclick="SyncAsync"><Icon Name="sync" />Sync now</button>
+    </div>
+</section>
 
 @code {
     private IReadOnlyList<QueuedCommand> _queued = [];

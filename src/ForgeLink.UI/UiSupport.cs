@@ -7,6 +7,12 @@ namespace ForgeLink.UI;
 /// <summary>Marker for locating this assembly (router AdditionalAssemblies).</summary>
 public sealed class UiAssembly;
 
+/// <summary>Location of the shared icon sprite, relative to the document base href (works in Blazor Server and BlazorWebView).</summary>
+public static class IconSprite
+{
+    public const string Path = "_content/ForgeLink.UI/icons.svg";
+}
+
 public enum NoticeKind
 {
     Error,
@@ -52,6 +58,25 @@ public static class Format
     public static string StateClass(string state) => "fl-state-" + state.ToLowerInvariant();
 
     public static string OeeClass(double oee) => oee >= 0.85 ? "fl-good" : oee >= 0.6 ? "fl-warn" : "fl-bad";
+
+    /// <summary>Plain-language band for OEE so the colour is never the only signal.</summary>
+    public static string OeeLabel(double oee) => oee >= 0.85 ? "World class" : oee >= 0.6 ? "Typical" : "Below target";
+
+    /// <summary>CSS width for a 0..1 fraction, clamped and culture-invariant.</summary>
+    public static string Width(double fraction) => (Math.Clamp(fraction, 0, 1) * 100).ToString("0.#", CultureInfo.InvariantCulture) + "%";
+
+    public static string Initials(string? name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return "?";
+        var local = name.Split('@')[0];
+        var parts = local.Split([' ', '.', '_', '-'], StringSplitOptions.RemoveEmptyEntries);
+        return parts.Length switch
+        {
+            0 => "?",
+            1 => parts[0][..Math.Min(2, parts[0].Length)].ToUpperInvariant(),
+            _ => string.Concat(char.ToUpperInvariant(parts[0][0]), char.ToUpperInvariant(parts[^1][0])),
+        };
+    }
 }
 
 /// <summary>

@@ -6,44 +6,49 @@
         new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
 }
 
-<p><a asp-action="Index">← Back to console</a></p>
-<h1>Outbox message @Model.Id</h1>
+<a class="fl-back" asp-action="Index">@Html.Icon("back")Back to console</a>
+
+<header class="fl-page-head">
+    <div>
+        <div class="fl-eyebrow">@Html.Icon("outbox")Outbox message</div>
+        <h1>#@Model.Id · @Model.MessageType</h1>
+        <p>Partition <code>@Model.PartitionKey</code> · created @Model.CreatedAtUtc.ToString("u") by @Model.CreatedBy</p>
+    </div>
+    <div class="fl-page-actions"><span class="fl-pill fl-st-@Model.Status.ToLowerInvariant()">@Model.Status</span></div>
+</header>
 
 @if (TempData["Flash"] is string flash)
 {
-    <div class="fl-banner fl-banner-info">@flash</div>
+    <div class="fl-banner fl-banner-info" role="status">@Html.Icon("info")<span>@flash</span></div>
 }
 
 <div class="fl-grid-2">
     <section class="fl-card">
-        <table class="fl-table">
-            <tr><th>Type</th><td>@Model.MessageType</td></tr>
-            <tr><th>Partition</th><td>@Model.PartitionKey</td></tr>
-            <tr><th>Status</th><td>@Model.Status</td></tr>
+        <div class="fl-card-head"><h3>@Html.Icon("info")Delivery</h3></div>
+        <table class="fl-table fl-table-kv">
             <tr><th>Attempts</th><td>@Model.Attempts</td></tr>
             <tr><th>Idempotency key</th><td><code>@Model.IdempotencyKey</code></td></tr>
-            <tr><th>Created</th><td>@Model.CreatedAtUtc.ToString("u") by @Model.CreatedBy</td></tr>
             <tr><th>Next attempt</th><td>@Model.NextAttemptAtUtc.ToString("u")</td></tr>
             <tr><th>Sent</th><td>@(Model.SentAtUtc?.ToString("u") ?? "—")</td></tr>
             <tr><th>ERP reference</th><td>@(Model.ErpReference ?? "—")</td></tr>
-            <tr><th>Last error</th><td>@(Model.LastError ?? "—")</td></tr>
+            <tr><th>Last error</th><td class="@(Model.LastError is null ? "" : "fl-bad")">@(Model.LastError ?? "—")</td></tr>
         </table>
 
         @if (Model.Status is "DeadLettered" or "Pending")
         {
-            <div class="fl-toolbar" style="margin-top:1rem">
+            <div class="fl-form-actions">
                 <form asp-action="Retry" asp-route-id="@Model.Id" method="post">
-                    <button class="fl-btn fl-btn-primary" type="submit">Retry now</button>
+                    <button class="fl-btn fl-btn-primary" type="submit">@Html.Icon("sync")Retry now</button>
                 </form>
-                <form asp-action="Cancel" asp-route-id="@Model.Id" method="post" class="fl-toolbar">
-                    <label class="fl-field"><span>Cancel reason (audited)</span><input class="fl-input" name="reason" required /></label>
-                    <button class="fl-btn" type="submit">Cancel message</button>
+                <form asp-action="Cancel" asp-route-id="@Model.Id" method="post" class="fl-toolbar" style="margin:0;flex:1">
+                    <label class="fl-field fl-grow"><span>Cancel reason (audited)</span><input class="fl-input" name="reason" required /></label>
+                    <button class="fl-btn fl-btn-danger" type="submit">Cancel message</button>
                 </form>
             </div>
         }
     </section>
     <section class="fl-card">
-        <h3>Payload</h3>
+        <div class="fl-card-head"><h3>@Html.Icon("api")Payload</h3></div>
         <pre class="fl-pre">@pretty</pre>
     </section>
 </div>

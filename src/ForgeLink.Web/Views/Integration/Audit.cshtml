@@ -4,30 +4,48 @@
     var filter = ViewBag.EntityType as string;
 }
 
-<h1>Audit trail</h1>
-<p class="fl-muted">Append-only record of who changed what, when, with before/after values. Written in the same transaction as the change.</p>
+<header class="fl-page-head">
+    <div>
+        <div class="fl-eyebrow">@Html.Icon("audit")Integration</div>
+        <h1>Audit trail</h1>
+        <p>Append-only record of who changed what, when, with before/after values. Written in the same transaction as the change.</p>
+    </div>
+</header>
 
-<div class="fl-filter">
-    <a asp-action="Audit" class="@(filter is null ? "active" : "")">All</a>
-    @foreach (var t in new[] { "WorkOrder", "InventoryBalance", "CycleCount", "Lot", "QualityCheck", "Item", "OutboxMessage" })
+<section class="fl-card fl-card-flush">
+    <div class="fl-card-head">
+        <div class="fl-filter" role="group" aria-label="Entity type">
+            <a asp-action="Audit" class="@(filter is null ? "active" : "")">All</a>
+            @foreach (var t in new[] { "WorkOrder", "InventoryBalance", "CycleCount", "Lot", "QualityCheck", "Item", "OutboxMessage" })
+            {
+                <a asp-action="Audit" asp-route-entityType="@t" class="@(filter == t ? "active" : "")">@t</a>
+            }
+        </div>
+        <span class="fl-muted fl-small">@Model.Count entries</span>
+    </div>
+    @if (Model.Count == 0)
     {
-        <a asp-action="Audit" asp-route-entityType="@t" class="@(filter == t ? "active" : "")">@t</a>
+        <div class="fl-empty">@Html.Icon("audit")<strong>No audit entries</strong></div>
     }
-</div>
-
-<table class="fl-table" style="margin-top:1rem">
-    <thead><tr><th>When (UTC)</th><th>User</th><th>Entity</th><th>Key</th><th>Action</th><th>Changes</th></tr></thead>
-    <tbody>
-    @foreach (var a in Model)
+    else
     {
-        <tr>
-            <td>@a.TimestampUtc.ToString("yyyy-MM-dd HH:mm:ss")</td>
-            <td>@a.UserName</td>
-            <td>@a.EntityType</td>
-            <td><code>@a.EntityKey</code></td>
-            <td>@a.Action</td>
-            <td><code style="font-size:.8rem">@a.Changes</code></td>
-        </tr>
+        <div class="fl-scroll">
+            <table class="fl-table">
+                <thead><tr><th>When (UTC)</th><th>User</th><th>Entity</th><th>Key</th><th>Action</th><th>Changes</th></tr></thead>
+                <tbody>
+                @foreach (var a in Model)
+                {
+                    <tr>
+                        <td class="fl-small fl-mono" style="white-space:nowrap">@a.TimestampUtc.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                        <td>@a.UserName</td>
+                        <td><strong>@a.EntityType</strong></td>
+                        <td><code>@a.EntityKey</code></td>
+                        <td><span class="fl-pill @(a.Action switch { "Added" => "fl-st-sent", "Deleted" => "fl-st-deadlettered", _ => "fl-wo-released" })">@a.Action</span></td>
+                        <td><span class="fl-changes" title="@a.Changes">@a.Changes</span></td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
     }
-    </tbody>
-</table>
+</section>

@@ -42,13 +42,15 @@ public sealed class PlantSimulator(Microsoft.Extensions.Options.IOptions<Simulat
     private static readonly string[] DownReasons = ["TOOL_CHANGE", "MATERIAL_SHORTAGE", "CHIP_JAM", "QUALITY_ADJUST", "PLANNED_PM", "OPERATOR_BREAK"];
     private static readonly double[] DownWeights = [0.30, 0.20, 0.20, 0.12, 0.08, 0.10];
     private readonly SemaphoreSlim _publishLock = new(1, 1);
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<string, object> _lastState = new();
     private IMqttClient? _client;
+    private MqttClientOptions? _clientOptions;
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         var opts = options.Value;
         _client = new MqttFactory().CreateMqttClient();
-        var clientOptions = new MqttClientOptionsBuilder().WithTcpServer(opts.Host, opts.Port).WithClientId("forgelink-ot-sim").Build();
+        var clientOptions = _clientOptions = new MqttClientOptionsBuilder().WithTcpServer(opts.Host, opts.Port).WithClientId("forgelink-ot-sim").Build();
 
         while (!_client.IsConnected && !stoppingToken.IsCancellationRequested)
         {
@@ -96,12 +98,36 @@ public sealed class PlantSimulator(Microsoft.Extensions.Options.IOptions<Simulat
     {
         using var timer = new PeriodicTimer(TimeSpan.FromSeconds(5));
         while (await timer.WaitForNextTickAsync(ct))
+        {
+            await EnsureConnectedAsync(opts, ct);
             foreach (var m in opts.Machines)
                 await PublishAsync(m, "heartbeat", new { }, ct);
+        }
+    }
+
+    /// <summary>
+    /// A broker restart (e.g. ForgeLink.Web redeploy with the embedded broker) drops the connection. Reconnect and
+    /// re-announce each machine's current state, as a real edge gateway does after a link outage.
+    /// </summary>
+    private async Task EnsureConnectedAsync(SimulatorOptions opts, CancellationToken ct)
+    {
+        if (_client is null || _clientOptions is null || _client.IsConnected) return;
+        try
+        {
+            await _client.ConnectAsync(_clientOptions, ct);
+            logger.LogInformation("Reconnected to MQTT {Host}:{Port}", opts.Host, opts.Port);
+            foreach (var m in opts.Machines)
+                if (_lastState.TryGetValue(m.Code, out var state)) await PublishAsync(m, "state", state, ct);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            logger.LogWarning("MQTT reconnect failed ({Error}); will retry", ex.Message);
+        }
     }
 
     private async Task PublishAsync(SimMachine m, string type, object payload, CancellationToken ct)
     {
+        if (type == "state") _lastState[m.Code] = payload;
         var json = JsonSerializer.Serialize(payload);
         // Add a device timestamp, as a real edge gateway would.
         json = json.Length > 2 ? json[..^1] + $",\"ts\":\"{DateTime.UtcNow:O}\"}}" : $"{{\"ts\":\"{DateTime.UtcNow:O}\"}}";

@@ -3,24 +3,36 @@
 
 <div class="fl-shell">
     <nav class="fl-nav" aria-label="Main">
-        <div class="fl-brand">ForgeLink</div>
-        <div class="fl-navsection">Operations (Blazor)</div>
-        <NavLink href="" Match="NavLinkMatch.All">Dashboard</NavLink>
-        <NavLink href="machines">Machines</NavLink>
-        <NavLink href="work-orders">Work orders</NavLink>
+        <a class="fl-brand" href="">
+            <span class="fl-logo"><Icon Name="logo" /></span>
+            <span>ForgeLink<small>Shop floor ↔ ERP</small></span>
+        </a>
+        <div class="fl-navsection">Operations</div>
+        <NavLink href="" Match="NavLinkMatch.All"><Icon Name="dashboard" />Plant overview</NavLink>
+        <NavLink href="machines"><Icon Name="machine" />Machines</NavLink>
+        <NavLink href="work-orders"><Icon Name="workorder" />Work orders</NavLink>
         <div class="fl-navsection">Materials &amp; quality</div>
-        <NavLink href="inventory">Inventory</NavLink>
-        <NavLink href="inventory/move">Move material</NavLink>
-        <NavLink href="inventory/count">Cycle count</NavLink>
-        <NavLink href="quality">Quality check</NavLink>
-        <NavLink href="lots/trace">Lot trace</NavLink>
-        <div class="fl-navsection">Integration (MVC)</div>
+        <NavLink href="inventory" Match="NavLinkMatch.All"><Icon Name="inventory" />Inventory</NavLink>
+        <NavLink href="inventory/move"><Icon Name="move" />Move material</NavLink>
+        <NavLink href="inventory/count"><Icon Name="count" />Cycle count</NavLink>
+        <NavLink href="quality"><Icon Name="quality" />Quality check</NavLink>
+        <NavLink href="lots/trace"><Icon Name="trace" />Lot trace</NavLink>
+        <div class="fl-navsection">Integration</div>
         @* MVC pages live outside the Blazor router: force a full page load. *@
-        <button class="fl-navlink" @onclick='() => Nav.NavigateTo("/integration", forceLoad: true)'>Outbox &amp; sync</button>
-        <button class="fl-navlink" @onclick='() => Nav.NavigateTo("/integration/audit", forceLoad: true)'>Audit trail</button>
-        <AuthorizeView>
-            <div class="fl-user">Signed in as @context.User.Identity?.Name</div>
-        </AuthorizeView>
+        <button class="fl-navlink" @onclick='() => Nav.NavigateTo("/integration", forceLoad: true)'><Icon Name="outbox" />Outbox &amp; sync</button>
+        <button class="fl-navlink" @onclick='() => Nav.NavigateTo("/integration/audit", forceLoad: true)'><Icon Name="audit" />Audit trail</button>
+        <div class="fl-nav-foot">
+            <AuthorizeView>
+                <div class="fl-user">
+                    <span class="fl-avatar">@Format.Initials(context.User.Identity?.Name)</span>
+                    <span><strong>@context.User.Identity?.Name</strong>Signed in</span>
+                </div>
+            </AuthorizeView>
+            @* Plain onclick (not @onclick): theme is a client-side preference, no server round trip. *@
+            <button class="fl-icon-btn fl-theme-toggle" type="button" onclick="flToggleTheme()" aria-label="Toggle dark mode" title="Toggle dark mode">
+                <Icon Name="moon" Class="fl-i-moon" /><Icon Name="sun" Class="fl-i-sun" />
+            </button>
+        </div>
     </nav>
     <main class="fl-main">
         @Body

@@ -2,50 +2,71 @@
 @inherits PollingComponent
 
 <PageTitle>Work orders · ForgeLink</PageTitle>
-<h1>Released work orders</h1>
+<PageHeader Section="Operations" Icon="workorder" Title="Released work orders">
+    <Description>Synced from the ERP. Progress and scrap are reported from the operator stations.</Description>
+    <ChildContent><LiveIndicator LastRefreshUtc="LastRefreshUtc" Stale="LoadError is not null" /></ChildContent>
+</PageHeader>
 
 <div class="fl-toolbar">
-    <label class="fl-field fl-inline">
-        <span>Line</span>
-        <select class="fl-input" @bind="_line" @bind:after="RefreshAsync">
-            <option value="">All</option>
-            <option value="L1">L1</option>
-            <option value="L2">L2</option>
-        </select>
-    </label>
-    <span class="fl-muted">Synced from ERP · updated @Format.Ago(LastRefreshUtc)</span>
+    <div class="fl-filter" role="group" aria-label="Line">
+        @foreach (var (value, label) in LineFilters)
+        {
+            <a href="" class="@(_line == value ? "active" : "")" @onclick="() => SetLineAsync(value)" @onclick:preventDefault>@label</a>
+        }
+    </div>
+    <span class="fl-spacer"></span>
+    <span class="fl-muted fl-small">@_orders.Count orders · @_orders.Count(o => o.Status == "InProgress") running</span>
 </div>
 
 <NoticeBanner Notice="LoadError" />
 
-<table class="fl-table">
-    <thead>
-    <tr><th>Order</th><th>Item</th><th>Line</th><th>Status</th><th>Machine</th><th>Progress</th><th>Scrap</th><th>Due</th></tr>
-    </thead>
-    <tbody>
-    @foreach (var w in _orders)
+<section class="fl-card fl-card-flush">
+    @if (Loaded && _orders.Count == 0)
     {
-        var pct = w.QuantityOrdered == 0 ? 0 : (double)(w.QuantityCompleted / w.QuantityOrdered);
-        <tr>
-            <td><strong>@w.Number</strong></td>
-            <td>@w.Sku <span class="fl-muted">@w.ItemDescription</span></td>
-            <td>@w.Line</td>
-            <td><span class="fl-pill fl-wo-@w.Status.ToLowerInvariant()">@w.Status</span></td>
-            <td>@(w.CurrentMachine ?? "—")</td>
-            <td>
-                <span class="fl-progress"><span style="width:@((Math.Min(1, pct) * 100).ToString("0", CultureInfo.InvariantCulture))%"></span></span>
-                @Format.Qty(w.QuantityCompleted) / @Format.Qty(w.QuantityOrdered) @w.Uom
-            </td>
-            <td>@Format.Qty(w.QuantityScrapped)</td>
-            <td>@Format.Local(w.DueDateUtc)</td>
-        </tr>
+        <EmptyState Icon="workorder" Title="No released work orders">The ERP sync brings new orders in automatically.</EmptyState>
     }
-    </tbody>
-</table>
+    else
+    {
+        <div class="fl-scroll">
+            <table class="fl-table">
+                <thead>
+                <tr><th>Order</th><th>Item</th><th>Line</th><th>Status</th><th>Machine</th><th>Progress</th><th class="fl-num">Scrap</th><th>Due</th></tr>
+                </thead>
+                <tbody>
+                @foreach (var w in _orders)
+                {
+                    var pct = w.QuantityOrdered == 0 ? 0 : (double)(w.QuantityCompleted / w.QuantityOrdered);
+                    <tr>
+                        <td><strong class="fl-mono">@w.Number</strong></td>
+                        <td>@w.Sku<span class="fl-sub">@w.ItemDescription</span></td>
+                        <td>@w.Line</td>
+                        <td><span class="fl-pill fl-wo-@w.Status.ToLowerInvariant()">@w.Status</span></td>
+                        <td>@(w.CurrentMachine ?? "—")</td>
+                        <td style="white-space:nowrap">
+                            <span class="fl-progress @(pct >= 1 ? "fl-done" : "")"><span style="width:@Format.Width(pct)"></span></span>
+                            <span class="fl-small">@Format.Qty(w.QuantityCompleted) / @Format.Qty(w.QuantityOrdered) @w.Uom</span>
+                        </td>
+                        <td class="fl-num @(w.QuantityScrapped > 0 ? "fl-warn" : "")">@Format.Qty(w.QuantityScrapped)</td>
+                        <td class="fl-small">@Format.Local(w.DueDateUtc)</td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    }
+</section>
 
 @code {
+    private static readonly (string Value, string Label)[] LineFilters = [("", "All lines"), ("L1", "L1"), ("L2", "L2")];
+
     private IReadOnlyList<WorkOrderDto> _orders = [];
     private string _line = "";
+
+    private Task SetLineAsync(string line)
+    {
+        _line = line;
+        return RefreshAsync();
+    }
 
     protected override async Task LoadAsync(CancellationToken ct) =>
         _orders = await Api.GetWorkOrdersAsync(string.IsNullOrEmpty(_line) ? null : _line, ct);

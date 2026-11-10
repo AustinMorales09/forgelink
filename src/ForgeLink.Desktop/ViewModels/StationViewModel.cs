@@ -288,6 +288,10 @@ public sealed partial class StationViewModel : ObservableObject
         }
     }
 
+    /// <summary>One-tap scrap reason codes (the operator can still type a different code).</summary>
+    [RelayCommand]
+    private void SetScrapReason(string reason) => ScrapReason = reason;
+
     private void Info(string text) => Add(text, "info");
 
     private void Warn(string text) => Add(text, "warn");
