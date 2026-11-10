@@ -72,7 +72,7 @@ ForgeLink.Devices         scale protocol, ZPL labels, TCP/serial adapters + simu
 
 ### Screenshots
 
-One design system (`src/ForgeLink.UI/wwwroot/forgelink.css` + an SVG icon sprite, light and dark themes, no CDN or web fonts so it works offline) is shared by the Blazor dashboard, the MVC console and the MAUI handheld. The WPF station uses the same palette.
+One design system is shared by the Blazor dashboard, the MVC console and the MAUI handheld (`src/ForgeLink.UI/wwwroot/forgelink.css` + an SVG icon sprite): warm graphite neutrals, a dark control-room sidebar and a single forge-orange accent, kept apart from the green / yellow / red status colours. Type is IBM Plex Sans, Sans Condensed and Mono, bundled under the SIL OFL (no CDN), so the handheld renders the same offline. The WPF station embeds the same fonts and palette.
 
 | WPF operator station | MAUI handheld (Windows) |
 |---|---|

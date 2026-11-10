@@ -18,5 +18,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Update="appsettings.json" CopyToOutputDirectory="PreserveNewest" />
+    <!-- IBM Plex (SIL OFL 1.1, see Fonts/OFL.txt), embedded so the station looks the same on any plant PC. -->
+    <Resource Include="Fonts/*.ttf" />
   </ItemGroup>
 </Project>

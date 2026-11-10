@@ -71,7 +71,7 @@
                 </StackPanel>
 
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                    <Border Width="38" Height="38" CornerRadius="11" Background="{StaticResource LogoBrush}" Margin="0,0,14,0">
+                    <Border Width="38" Height="38" CornerRadius="6" Background="{StaticResource LogoBrush}" Margin="0,0,14,0">
                         <Path Data="M9,7 H7 A5,5 0 0 0 7,17 H9 M15,7 H17 A5,5 0 0 1 17,17 H15 M8,12 H16" Stroke="White" StrokeThickness="2.4"
                               StrokeStartLineCap="Round" StrokeEndLineCap="Round" Width="24" Height="24" Stretch="None" />
                     </Border>
@@ -82,8 +82,8 @@
                     <Border Margin="20,0,0,0">
                         <Border.Style>
                             <Style TargetType="Border" BasedOn="{StaticResource Chip}">
-                                <Setter Property="Background" Value="#2A3240" />
-                                <Setter Property="BorderBrush" Value="#3A4454" />
+                                <Setter Property="Background" Value="#2E2B28" />
+                                <Setter Property="BorderBrush" Value="#3E3A36" />
                                 <Style.Triggers>
                                     <DataTrigger Binding="{Binding MachineState}" Value="Running"><Setter Property="Background" Value="{StaticResource Good}" /><Setter Property="BorderBrush" Value="{StaticResource Good}" /></DataTrigger>
                                     <DataTrigger Binding="{Binding MachineState}" Value="Down"><Setter Property="Background" Value="{StaticResource Bad}" /><Setter Property="BorderBrush" Value="{StaticResource Bad}" /></DataTrigger>
@@ -197,8 +197,8 @@
                         <WrapPanel.Resources>
                             <Style TargetType="Button" BasedOn="{StaticResource Compact}">
                                 <Setter Property="Margin" Value="0,0,8,0" />
-                                <Setter Property="FontFamily" Value="{StaticResource MonoFont}" />
-                                <Setter Property="FontSize" Value="12" />
+                                <Setter Property="FontFamily" Value="{StaticResource DisplayFont}" />
+                                <Setter Property="FontSize" Value="14" />
                                 <Setter Property="Padding" Value="10,4" />
                                 <Setter Property="Command" Value="{Binding SetScrapReasonCommand}" />
                                 <Setter Property="CommandParameter" Value="{Binding Content, RelativeSource={RelativeSource Self}}" />

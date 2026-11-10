@@ -97,11 +97,18 @@ public sealed class PlantSimulator(Microsoft.Extensions.Options.IOptions<Simulat
     private async Task HeartbeatAsync(SimulatorOptions opts, CancellationToken ct)
     {
         using var timer = new PeriodicTimer(TimeSpan.FromSeconds(5));
+        var tick = 0;
         while (await timer.WaitForNextTickAsync(ct))
         {
             await EnsureConnectedAsync(opts, ct);
+            // Every 30 s also re-send the current state (like a Sparkplug rebirth), so a consumer that subscribed late or
+            // restarted recovers the real state instead of staying Offline. ForgeLink ignores unchanged states.
+            var resendState = ++tick % 6 == 0;
             foreach (var m in opts.Machines)
+            {
                 await PublishAsync(m, "heartbeat", new { }, ct);
+                if (resendState && _lastState.TryGetValue(m.Code, out var state)) await PublishAsync(m, "state", state, ct);
+            }
         }
     }
 
