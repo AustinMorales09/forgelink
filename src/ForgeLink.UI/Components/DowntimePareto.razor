@@ -1,0 +1,25 @@
+@if (Reasons.Count == 0)
+{
+    <p class="fl-muted">No downtime in this window.</p>
+}
+else
+{
+    var max = Math.Max(1, Reasons.Max(r => r.Minutes));
+    var total = Math.Max(1, Reasons.Sum(r => r.Minutes));
+    double cumulative = 0;
+    <ul class="fl-pareto">
+        @foreach (var r in Reasons)
+        {
+            cumulative += r.Minutes;
+            <li>
+                <span class="fl-pareto-label">@r.ReasonCode</span>
+                <span class="fl-pareto-bar"><span style="width:@((r.Minutes / max * 100).ToString("0.#", CultureInfo.InvariantCulture))%"></span></span>
+                <span class="fl-pareto-value">@r.Minutes.ToString("0.#") min · @r.Occurrences× · @((cumulative / total * 100).ToString("0"))% cum.</span>
+            </li>
+        }
+    </ul>
+}
+
+@code {
+    [Parameter] public IReadOnlyList<DowntimeReasonDto> Reasons { get; set; } = [];
+}

@@ -1,0 +1,33 @@
+@model IReadOnlyList<AuditEntryDto>
+@{
+    ViewData["Title"] = "Audit trail";
+    var filter = ViewBag.EntityType as string;
+}
+
+<h1>Audit trail</h1>
+<p class="fl-muted">Append-only record of who changed what, when, with before/after values. Written in the same transaction as the change.</p>
+
+<div class="fl-filter">
+    <a asp-action="Audit" class="@(filter is null ? "active" : "")">All</a>
+    @foreach (var t in new[] { "WorkOrder", "InventoryBalance", "CycleCount", "Lot", "QualityCheck", "Item", "OutboxMessage" })
+    {
+        <a asp-action="Audit" asp-route-entityType="@t" class="@(filter == t ? "active" : "")">@t</a>
+    }
+</div>
+
+<table class="fl-table" style="margin-top:1rem">
+    <thead><tr><th>When (UTC)</th><th>User</th><th>Entity</th><th>Key</th><th>Action</th><th>Changes</th></tr></thead>
+    <tbody>
+    @foreach (var a in Model)
+    {
+        <tr>
+            <td>@a.TimestampUtc.ToString("yyyy-MM-dd HH:mm:ss")</td>
+            <td>@a.UserName</td>
+            <td>@a.EntityType</td>
+            <td><code>@a.EntityKey</code></td>
+            <td>@a.Action</td>
+            <td><code style="font-size:.8rem">@a.Changes</code></td>
+        </tr>
+    }
+    </tbody>
+</table>

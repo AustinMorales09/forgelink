@@ -1,0 +1,36 @@
+@* Stacked hourly column chart (good + reject) drawn as inline SVG: no JS charting dependency, works in WebView. *@
+@if (Points.Count == 0)
+{
+    <p class="fl-muted">No production counts in this window yet.</p>
+}
+else
+{
+    const double width = 720, height = 180, pad = 24;
+    var max = Math.Max(1, Points.Max(p => p.Good + p.Reject));
+    var slot = (width - pad) / Points.Count;
+    var bar = Math.Max(4, slot * 0.7);
+    <svg class="fl-chart" viewBox="0 0 @width @(height + 20)" role="img" aria-label="Hourly throughput">
+        @for (var i = 0; i < Points.Count; i++)
+        {
+            var p = Points[i];
+            var x = pad + i * slot + (slot - bar) / 2;
+            var gh = p.Good / (double)max * (height - 10);
+            var rh = p.Reject / (double)max * (height - 10);
+            <rect class="fl-bar-good" x="@F(x)" y="@F(height - gh)" width="@F(bar)" height="@F(gh)"><title>@Format.Local(p.HourUtc): @p.Good good</title></rect>
+            <rect class="fl-bar-reject" x="@F(x)" y="@F(height - gh - rh)" width="@F(bar)" height="@F(rh)"><title>@p.Reject rejects</title></rect>
+            @SvgText(x + bar / 2, height + 14, p.HourUtc.ToLocalTime().ToString("HH"), "middle")
+        }
+        @SvgText(0, 12, max.ToString(CultureInfo.InvariantCulture), "start")
+        <line class="fl-axis-line" x1="@pad" y1="@height" x2="@width" y2="@height" />
+    </svg>
+}
+
+@code {
+    [Parameter] public IReadOnlyList<ThroughputPointDto> Points { get; set; } = [];
+
+    private static string F(double v) => v.ToString("0.##", CultureInfo.InvariantCulture);
+
+    // <text> is a reserved Razor tag, so SVG text labels are emitted as markup (values are numeric/hour strings only).
+    private static MarkupString SvgText(double x, double y, string label, string anchor) =>
+        new($"<text class=\"fl-axis\" x=\"{F(x)}\" y=\"{F(y)}\" text-anchor=\"{anchor}\">{System.Net.WebUtility.HtmlEncode(label)}</text>");
+}

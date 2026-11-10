@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <!-- Stand-in ERP REST API with fault injection, used for demos and for proving the integration is resilient. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\ForgeLink.Contracts\ForgeLink.Contracts.csproj" />
+  </ItemGroup>
+</Project>

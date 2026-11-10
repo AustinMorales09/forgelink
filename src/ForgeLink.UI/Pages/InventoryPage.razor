@@ -1,0 +1,72 @@
+@page "/inventory"
+@inject IForgeLinkApi Api
+
+<PageTitle>Inventory · ForgeLink</PageTitle>
+<h1>Inventory lookup</h1>
+
+<div class="fl-toolbar">
+    <ScanInput Label="Scan item, location or lot label" AutoFocus OnScan="OnScanAsync" />
+    <label class="fl-field"><span>SKU</span><input class="fl-input" @bind="_sku" /></label>
+    <label class="fl-field"><span>Location</span><input class="fl-input" @bind="_location" /></label>
+    <button class="fl-btn" @onclick="SearchAsync">Search</button>
+</div>
+
+<NoticeBanner Notice="_notice" />
+
+<table class="fl-table">
+    <thead><tr><th>SKU</th><th>Location</th><th>Lot</th><th class="fl-num">Qty</th><th>Lot status</th><th></th></tr></thead>
+    <tbody>
+    @foreach (var b in _balances)
+    {
+        <tr class="@(b.LotStatus == "Available" ? "" : "fl-row-hold")">
+            <td>@b.Sku</td>
+            <td>@b.Location</td>
+            <td>@b.LotNumber</td>
+            <td class="fl-num">@Format.Qty(b.Quantity)</td>
+            <td><span class="fl-pill fl-lot-@b.LotStatus.ToLowerInvariant()">@b.LotStatus</span></td>
+            <td>
+                @if (!string.IsNullOrEmpty(b.LotNumber))
+                {
+                    <a href="lots/trace?lot=@Uri.EscapeDataString(b.LotNumber)">Trace</a>
+                }
+            </td>
+        </tr>
+    }
+    </tbody>
+</table>
+
+@code {
+    private IReadOnlyList<InventoryBalanceDto> _balances = [];
+    private string? _sku;
+    private string? _location;
+    private Notice? _notice;
+
+    protected override Task OnInitializedAsync() => SearchAsync();
+
+    private async Task OnScanAsync(ScanResult scan)
+    {
+        (string? sku, string? location) filter = scan.Kind switch
+        {
+            ScanKind.Location => (null, scan.Value),
+            ScanKind.Item => (scan.Value, null),
+            ScanKind.Gs1 => (scan.Sku, null),
+            _ => (scan.Value, null),
+        };
+        (_sku, _location) = filter;
+        await SearchAsync();
+        if (scan.Lot is { } lot) _balances = _balances.Where(b => b.LotNumber == lot).ToList();
+    }
+
+    private async Task SearchAsync()
+    {
+        try
+        {
+            _balances = await Api.GetInventoryAsync(_sku, _location);
+            _notice = _balances.Count == 0 ? new Notice("Nothing on hand for that search.", NoticeKind.Info) : null;
+        }
+        catch (Exception ex)
+        {
+            _notice = Notice.From(ex);
+        }
+    }
+}

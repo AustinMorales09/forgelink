@@ -1,0 +1,116 @@
+@page "/inventory/count"
+@inject IForgeLinkApi Api
+
+<PageTitle>Cycle count · ForgeLink</PageTitle>
+<h1>Cycle count</h1>
+<p class="fl-muted">Blind count: the system quantity is not shown to the counter. Variances above tolerance go to a supervisor.</p>
+
+<ScanInput Label="Scan location or lot label" AutoFocus OnScan="OnScan" />
+
+<div class="fl-form">
+    <label class="fl-field"><span>Location</span><input class="fl-input" @bind="_location" /></label>
+    <label class="fl-field"><span>SKU</span><input class="fl-input" @bind="_sku" /></label>
+    <label class="fl-field"><span>Lot</span><input class="fl-input" @bind="_lot" /></label>
+    <label class="fl-field"><span>Counted quantity</span><input class="fl-input" type="number" step="any" min="0" @bind="_counted" /></label>
+</div>
+<button class="fl-btn fl-btn-primary" disabled="@_busy" @onclick="SubmitAsync">Submit count</button>
+<NoticeBanner Notice="_notice" />
+
+<h2>Pending supervisor approval</h2>
+@if (_pending.Count == 0)
+{
+    <p class="fl-muted">Nothing waiting.</p>
+}
+else
+{
+    <table class="fl-table">
+        <thead><tr><th>Counted</th><th>SKU</th><th>Location</th><th>Lot</th><th class="fl-num">System</th><th class="fl-num">Counted</th><th class="fl-num">Variance</th><th>By</th><th></th></tr></thead>
+        <tbody>
+        @foreach (var c in _pending)
+        {
+            <tr>
+                <td>@Format.Local(c.CountedAtUtc)</td>
+                <td>@c.Sku</td>
+                <td>@c.Location</td>
+                <td>@c.LotNumber</td>
+                <td class="fl-num">@Format.Qty(c.SystemQuantity)</td>
+                <td class="fl-num">@Format.Qty(c.CountedQuantity)</td>
+                <td class="fl-num @(c.Variance < 0 ? "fl-bad" : "fl-warn")">@Format.Qty(c.Variance)</td>
+                <td>@c.CountedBy</td>
+                <td class="fl-actions">
+                    <button class="fl-btn fl-btn-small" @onclick="() => ReviewAsync(c.Id, true)">Approve</button>
+                    <button class="fl-btn fl-btn-small fl-btn-ghost" @onclick="() => ReviewAsync(c.Id, false)">Reject</button>
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+}
+
+@code {
+    private string _location = "", _sku = "", _lot = "";
+    private decimal _counted;
+    private bool _busy;
+    private Notice? _notice;
+    private IReadOnlyList<CycleCountDto> _pending = [];
+    private string _idempotencyKey = Guid.NewGuid().ToString("N");
+
+    protected override Task OnInitializedAsync() => LoadPendingAsync();
+
+    private void OnScan(ScanResult scan)
+    {
+        switch (scan.Kind)
+        {
+            case ScanKind.Location: _location = scan.Value; break;
+            case ScanKind.Item: _sku = scan.Value; break;
+            case ScanKind.Lot: _lot = scan.Value; break;
+            case ScanKind.Gs1:
+                _sku = scan.Sku ?? _sku;
+                _lot = scan.Lot ?? _lot;
+                break;
+        }
+    }
+
+    private async Task SubmitAsync()
+    {
+        _busy = true;
+        try
+        {
+            var result = await Api.SubmitCycleCountAsync(new SubmitCycleCountRequest(_sku, _location, _lot, _counted), _idempotencyKey);
+            _notice = result.Status == "Posted"
+                ? Notice.Ok(result.Variance == 0 ? "Count matches. Thank you." : $"Variance {Format.Qty(result.Variance)} within tolerance: adjustment posted.")
+                : new Notice($"Variance {Format.Qty(result.Variance)} exceeds tolerance: sent for supervisor approval.", NoticeKind.Info);
+            _counted = 0;
+            _idempotencyKey = Guid.NewGuid().ToString("N");
+            await LoadPendingAsync();
+        }
+        catch (Exception ex)
+        {
+            _notice = Notice.From(ex);
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task ReviewAsync(Guid id, bool approve)
+    {
+        try
+        {
+            await Api.ApproveCycleCountAsync(id, approve);
+            _notice = Notice.Ok(approve ? "Variance approved and posted to inventory." : "Count rejected; recount required.");
+            await LoadPendingAsync();
+        }
+        catch (Exception ex)
+        {
+            _notice = Notice.From(ex);
+        }
+    }
+
+    private async Task LoadPendingAsync()
+    {
+        try { _pending = await Api.GetPendingCycleCountsAsync(); }
+        catch (Exception ex) { _notice = Notice.From(ex); }
+    }
+}

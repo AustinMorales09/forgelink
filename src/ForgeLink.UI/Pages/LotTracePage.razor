@@ -1,0 +1,89 @@
+@page "/lots/trace"
+@inject IForgeLinkApi Api
+
+<PageTitle>Lot trace · ForgeLink</PageTitle>
+<h1>Lot traceability</h1>
+
+<ScanInput Label="Scan or enter a lot" AutoFocus OnScan="OnScanAsync" />
+<NoticeBanner Notice="_notice" />
+
+@if (_trace is { } t)
+{
+    <div class="fl-grid-2">
+        <section class="fl-card">
+            <h3>Components (what went in)</h3>
+            <LotTree Node="t.Components" />
+        </section>
+        <section class="fl-card">
+            <h3>Where used (recall scope)</h3>
+            <LotTree Node="t.WhereUsed" />
+        </section>
+    </div>
+
+    <section class="fl-card">
+        <h3>On hand</h3>
+        @if (t.OnHand.Count == 0)
+        {
+            <p class="fl-muted">None on hand.</p>
+        }
+        else
+        {
+            <ul>@foreach (var b in t.OnHand) { <li>@Format.Qty(b.Quantity) at @b.Location (@b.LotStatus)</li> }</ul>
+        }
+    </section>
+
+    <section class="fl-card">
+        <h3>Inspections</h3>
+        @if (t.QualityChecks.Count == 0)
+        {
+            <p class="fl-muted">No inspections recorded.</p>
+        }
+        else
+        {
+            <table class="fl-table">
+                <thead><tr><th>When</th><th>Characteristic</th><th class="fl-num">Measured</th><th>Spec</th><th>Result</th><th>Inspector</th></tr></thead>
+                <tbody>
+                @foreach (var q in t.QualityChecks)
+                {
+                    <tr>
+                        <td>@Format.Local(q.CheckedAtUtc)</td>
+                        <td>@q.Characteristic</td>
+                        <td class="fl-num">@q.Measured</td>
+                        <td>@q.LowerLimit – @q.UpperLimit</td>
+                        <td class="@(q.Result == "Pass" ? "fl-good" : "fl-bad")">@q.Result</td>
+                        <td>@q.Inspector</td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        }
+    </section>
+}
+
+@code {
+    private LotTraceDto? _trace;
+    private Notice? _notice;
+
+    [SupplyParameterFromQuery(Name = "lot")] public string? Lot { get; set; }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (!string.IsNullOrWhiteSpace(Lot)) await LoadAsync(Lot);
+    }
+
+    private Task OnScanAsync(ScanResult scan) => LoadAsync(scan.Lot ?? scan.Value);
+
+    private async Task LoadAsync(string lot)
+    {
+        try
+        {
+            _trace = await Api.TraceLotAsync(lot);
+            _notice = null;
+        }
+        catch (Exception ex)
+        {
+            _trace = null;
+            _notice = Notice.From(ex);
+        }
+    }
+}

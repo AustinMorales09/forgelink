@@ -1,0 +1,22 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/ForgeLink.Application/ForgeLink.Application.csproj" />
+    <Project Path="src/ForgeLink.Client/ForgeLink.Client.csproj" />
+    <Project Path="src/ForgeLink.Contracts/ForgeLink.Contracts.csproj" />
+    <Project Path="src/ForgeLink.Desktop/ForgeLink.Desktop.csproj" />
+    <Project Path="src/ForgeLink.Devices/ForgeLink.Devices.csproj" />
+    <Project Path="src/ForgeLink.Domain/ForgeLink.Domain.csproj" />
+    <Project Path="src/ForgeLink.Infrastructure/ForgeLink.Infrastructure.csproj" />
+    <Project Path="src/ForgeLink.Mobile/ForgeLink.Mobile.csproj" />
+    <Project Path="src/ForgeLink.UI/ForgeLink.UI.csproj" />
+    <Project Path="src/ForgeLink.Web/ForgeLink.Web.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/ForgeLink.IntegrationTests/ForgeLink.IntegrationTests.csproj" />
+    <Project Path="tests/ForgeLink.UnitTests/ForgeLink.UnitTests.csproj" />
+  </Folder>
+  <Folder Name="/tools/">
+    <Project Path="tools/ForgeLink.ErpSimulator/ForgeLink.ErpSimulator.csproj" />
+    <Project Path="tools/ForgeLink.OtSimulator/ForgeLink.OtSimulator.csproj" />
+  </Folder>
+</Solution>

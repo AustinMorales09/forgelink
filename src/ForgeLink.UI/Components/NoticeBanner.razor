@@ -1,0 +1,8 @@
+@if (Notice is not null)
+{
+    <div class="@Notice.CssClass" role="@(Notice.Kind == NoticeKind.Error ? "alert" : "status")">@Notice.Message</div>
+}
+
+@code {
+    [Parameter] public Notice? Notice { get; set; }
+}

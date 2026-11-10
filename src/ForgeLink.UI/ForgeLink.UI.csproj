@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+  <!--
+    Razor Class Library shared by the Blazor Server web app and the .NET MAUI Blazor Hybrid app.
+    Components depend only on IForgeLinkApi, so each host decides how data is fetched
+    (in-process on the server; HTTP + offline queue on devices).
+  -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <SupportedPlatform Include="browser" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Components.Web" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\ForgeLink.Contracts\ForgeLink.Contracts.csproj" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,88 @@
+@page "/inventory/move"
+@inject IForgeLinkApi Api
+
+<PageTitle>Move material · ForgeLink</PageTitle>
+<h1>Move material</h1>
+<p class="fl-muted">Scan a ForgeLink lot label (GS1-128) to fill item, lot and quantity, then scan the from and to locations.</p>
+
+<ScanInput Label="Scan" AutoFocus OnScan="OnScan" />
+
+<div class="fl-form">
+    <label class="fl-field"><span>SKU</span><input class="fl-input" @bind="_sku" /></label>
+    <label class="fl-field"><span>Lot</span><input class="fl-input" @bind="_lot" /></label>
+    <label class="fl-field"><span>From location</span><input class="fl-input" @bind="_from" /></label>
+    <label class="fl-field"><span>To location</span><input class="fl-input" @bind="_to" /></label>
+    <label class="fl-field"><span>Quantity</span><input class="fl-input" type="number" step="any" min="0" @bind="_qty" /></label>
+</div>
+
+<button class="fl-btn fl-btn-primary" disabled="@_busy" @onclick="SubmitAsync">Move</button>
+<NoticeBanner Notice="_notice" />
+
+@if (_last is { } t)
+{
+    <p class="fl-muted">Last move: @Format.Qty(t.Quantity) × @t.Sku lot @t.LotNumber, @t.FromLocation → @t.ToLocation (txn @t.Id.ToString("N")[..8])</p>
+}
+
+@code {
+    private string _sku = "", _lot = "", _from = "", _to = "";
+    private decimal _qty;
+    private bool _busy;
+    private Notice? _notice;
+    private InventoryTransactionDto? _last;
+
+    // The idempotency key is created per attempt and kept until success, so a double-tap or a retry
+    // after a timeout cannot move the stock twice.
+    private string _idempotencyKey = Guid.NewGuid().ToString("N");
+
+    private void OnScan(ScanResult scan)
+    {
+        switch (scan.Kind)
+        {
+            case ScanKind.Gs1:
+                _sku = scan.Sku ?? _sku;
+                _lot = scan.Lot ?? _lot;
+                if (scan.Quantity is { } q) _qty = q;
+                break;
+            case ScanKind.Item: _sku = scan.Value; break;
+            case ScanKind.Lot: _lot = scan.Value; break;
+            case ScanKind.Location:
+                if (string.IsNullOrEmpty(_from)) _from = scan.Value; else _to = scan.Value;
+                break;
+            default:
+                _notice = new Notice($"Unrecognised barcode '{scan.Raw}'.", NoticeKind.Error);
+                return;
+        }
+        _notice = null;
+    }
+
+    private async Task SubmitAsync()
+    {
+        _busy = true;
+        try
+        {
+            _last = await Api.MoveInventoryAsync(new MoveInventoryRequest(_sku, _lot, _from, _to, _qty), _idempotencyKey);
+            _notice = Notice.Ok("Move posted. ERP transfer queued.");
+            Reset();
+        }
+        catch (QueuedForSyncException ex)
+        {
+            _notice = Notice.From(ex);
+            Reset();
+        }
+        catch (Exception ex)
+        {
+            _notice = Notice.From(ex);
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private void Reset()
+    {
+        _sku = _lot = _from = _to = "";
+        _qty = 0;
+        _idempotencyKey = Guid.NewGuid().ToString("N");
+    }
+}

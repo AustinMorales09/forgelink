@@ -1,0 +1,52 @@
+@page "/work-orders"
+@inherits PollingComponent
+
+<PageTitle>Work orders · ForgeLink</PageTitle>
+<h1>Released work orders</h1>
+
+<div class="fl-toolbar">
+    <label class="fl-field fl-inline">
+        <span>Line</span>
+        <select class="fl-input" @bind="_line" @bind:after="RefreshAsync">
+            <option value="">All</option>
+            <option value="L1">L1</option>
+            <option value="L2">L2</option>
+        </select>
+    </label>
+    <span class="fl-muted">Synced from ERP · updated @Format.Ago(LastRefreshUtc)</span>
+</div>
+
+<NoticeBanner Notice="LoadError" />
+
+<table class="fl-table">
+    <thead>
+    <tr><th>Order</th><th>Item</th><th>Line</th><th>Status</th><th>Machine</th><th>Progress</th><th>Scrap</th><th>Due</th></tr>
+    </thead>
+    <tbody>
+    @foreach (var w in _orders)
+    {
+        var pct = w.QuantityOrdered == 0 ? 0 : (double)(w.QuantityCompleted / w.QuantityOrdered);
+        <tr>
+            <td><strong>@w.Number</strong></td>
+            <td>@w.Sku <span class="fl-muted">@w.ItemDescription</span></td>
+            <td>@w.Line</td>
+            <td><span class="fl-pill fl-wo-@w.Status.ToLowerInvariant()">@w.Status</span></td>
+            <td>@(w.CurrentMachine ?? "—")</td>
+            <td>
+                <span class="fl-progress"><span style="width:@((Math.Min(1, pct) * 100).ToString("0", CultureInfo.InvariantCulture))%"></span></span>
+                @Format.Qty(w.QuantityCompleted) / @Format.Qty(w.QuantityOrdered) @w.Uom
+            </td>
+            <td>@Format.Qty(w.QuantityScrapped)</td>
+            <td>@Format.Local(w.DueDateUtc)</td>
+        </tr>
+    }
+    </tbody>
+</table>
+
+@code {
+    private IReadOnlyList<WorkOrderDto> _orders = [];
+    private string _line = "";
+
+    protected override async Task LoadAsync(CancellationToken ct) =>
+        _orders = await Api.GetWorkOrdersAsync(string.IsNullOrEmpty(_line) ? null : _line, ct);
+}

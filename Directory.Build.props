@@ -1,0 +1,13 @@
+<Project>
+  <!-- Shared build settings: one place for language/nullability/analysis rules (coding standard). -->
+  <PropertyGroup>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <NuGetAudit>true</NuGetAudit>
+    <Company>ForgeLink</Company>
+    <Product>ForgeLink Shop-Floor Integration Platform</Product>
+    <Version>1.0.0</Version>
+  </PropertyGroup>
+</Project>

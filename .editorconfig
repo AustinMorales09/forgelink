@@ -1,0 +1,20 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = crlf
+insert_final_newline = true
+indent_style = space
+indent_size = 4
+trim_trailing_whitespace = true
+
+[*.{json,yml,yaml,csproj,props,slnx,xml,razor,cshtml,html,css}]
+indent_size = 2
+
+[*.cs]
+csharp_style_namespace_declarations = file_scoped:warning
+csharp_style_var_for_built_in_types = true:suggestion
+csharp_prefer_primary_constructors = true:suggestion
+dotnet_style_qualification_for_field = false:warning
+dotnet_sort_system_directives_first = true
+dotnet_diagnostic.CA2007.severity = none   # ConfigureAwait: not needed in ASP.NET Core / UI apps

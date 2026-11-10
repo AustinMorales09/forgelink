@@ -1,0 +1,28 @@
+@inherits LayoutComponentBase
+@inject NavigationManager Nav
+
+<div class="fl-shell">
+    <nav class="fl-nav" aria-label="Main">
+        <div class="fl-brand">ForgeLink</div>
+        <div class="fl-navsection">Operations (Blazor)</div>
+        <NavLink href="" Match="NavLinkMatch.All">Dashboard</NavLink>
+        <NavLink href="machines">Machines</NavLink>
+        <NavLink href="work-orders">Work orders</NavLink>
+        <div class="fl-navsection">Materials &amp; quality</div>
+        <NavLink href="inventory">Inventory</NavLink>
+        <NavLink href="inventory/move">Move material</NavLink>
+        <NavLink href="inventory/count">Cycle count</NavLink>
+        <NavLink href="quality">Quality check</NavLink>
+        <NavLink href="lots/trace">Lot trace</NavLink>
+        <div class="fl-navsection">Integration (MVC)</div>
+        @* MVC pages live outside the Blazor router: force a full page load. *@
+        <button class="fl-navlink" @onclick='() => Nav.NavigateTo("/integration", forceLoad: true)'>Outbox &amp; sync</button>
+        <button class="fl-navlink" @onclick='() => Nav.NavigateTo("/integration/audit", forceLoad: true)'>Audit trail</button>
+        <AuthorizeView>
+            <div class="fl-user">Signed in as @context.User.Identity?.Name</div>
+        </AuthorizeView>
+    </nav>
+    <main class="fl-main">
+        @Body
+    </main>
+</div>

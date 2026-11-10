@@ -1,0 +1,49 @@
+@inherits LayoutComponentBase
+@implements IDisposable
+@inject StoreAndForwardForgeLinkApi Api
+
+<header class="m-top @(Api.IsOnline ? "" : "m-offline")">
+    <a href="" class="m-brand">ForgeLink</a>
+    <span class="m-status">
+        @(Api.IsOnline ? "Online" : "OFFLINE")
+        @if (_pending > 0)
+        {
+            <span class="m-badge">@_pending to sync</span>
+        }
+    </span>
+</header>
+
+<main class="m-main">@Body</main>
+
+<nav class="m-bottom">
+    <NavLink href="" Match="NavLinkMatch.All">Home</NavLink>
+    <NavLink href="inventory/move">Move</NavLink>
+    <NavLink href="inventory/count">Count</NavLink>
+    <NavLink href="inventory">Lookup</NavLink>
+    <NavLink href="lots/trace">Trace</NavLink>
+</nav>
+
+@code {
+    private int _pending;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Api.ConnectivityChanged += OnChanged;
+        Api.Queue.Changed += OnQueueChanged;
+        _pending = await Api.Queue.CountAsync();
+    }
+
+    private void OnChanged(object? sender, bool online) => InvokeAsync(StateHasChanged);
+
+    private void OnQueueChanged(object? sender, EventArgs e) => InvokeAsync(async () =>
+    {
+        _pending = await Api.Queue.CountAsync();
+        StateHasChanged();
+    });
+
+    public void Dispose()
+    {
+        Api.ConnectivityChanged -= OnChanged;
+        Api.Queue.Changed -= OnQueueChanged;
+    }
+}

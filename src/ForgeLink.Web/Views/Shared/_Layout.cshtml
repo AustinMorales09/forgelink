@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@ViewData["Title"] · ForgeLink</title>
+    <link rel="stylesheet" href="~/_content/ForgeLink.UI/forgelink.css" />
+</head>
+<body>
+<div class="fl-shell">
+    <nav class="fl-nav">
+        <div class="fl-brand">ForgeLink</div>
+        <div class="fl-navsection">Operations</div>
+        <a href="/">Dashboard</a>
+        <a href="/machines">Machines</a>
+        <a href="/work-orders">Work orders</a>
+        <a href="/inventory">Inventory</a>
+        <div class="fl-navsection">Integration (MVC)</div>
+        <a asp-controller="Integration" asp-action="Index">Outbox &amp; sync</a>
+        <a asp-controller="Integration" asp-action="Audit">Audit trail</a>
+        <a href="/openapi/v1.json">OpenAPI</a>
+        <div class="fl-user">Signed in as @User.Identity?.Name</div>
+    </nav>
+    <main class="fl-main">
+        @RenderBody()
+    </main>
+</div>
+</body>
+</html>

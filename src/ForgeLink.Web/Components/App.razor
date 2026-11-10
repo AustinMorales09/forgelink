@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <base href="/" />
+    <link rel="stylesheet" href="@Assets["_content/ForgeLink.UI/forgelink.css"]" />
+    <link rel="icon" href="data:," />
+    <HeadOutlet @rendermode="RenderModeServerNoPrerender" />
+</head>
+<body>
+    @* Interactive Server for the whole app. Prerendering is off: pages poll live plant data, so rendering twice adds load for no benefit. *@
+    <Routes @rendermode="RenderModeServerNoPrerender" />
+    <script src="_framework/blazor.web.js"></script>
+</body>
+</html>
+
+@code {
+    private static readonly IComponentRenderMode RenderModeServerNoPrerender = new InteractiveServerRenderMode(prerender: false);
+}

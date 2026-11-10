@@ -1,0 +1,20 @@
+{
+  "solution": {
+    "path": "ForgeLink.slnx",
+    "projects": [
+      "src/ForgeLink.Application/ForgeLink.Application.csproj",
+      "src/ForgeLink.Client/ForgeLink.Client.csproj",
+      "src/ForgeLink.Contracts/ForgeLink.Contracts.csproj",
+      "src/ForgeLink.Desktop/ForgeLink.Desktop.csproj",
+      "src/ForgeLink.Devices/ForgeLink.Devices.csproj",
+      "src/ForgeLink.Domain/ForgeLink.Domain.csproj",
+      "src/ForgeLink.Infrastructure/ForgeLink.Infrastructure.csproj",
+      "src/ForgeLink.UI/ForgeLink.UI.csproj",
+      "src/ForgeLink.Web/ForgeLink.Web.csproj",
+      "tests/ForgeLink.IntegrationTests/ForgeLink.IntegrationTests.csproj",
+      "tests/ForgeLink.UnitTests/ForgeLink.UnitTests.csproj",
+      "tools/ForgeLink.ErpSimulator/ForgeLink.ErpSimulator.csproj",
+      "tools/ForgeLink.OtSimulator/ForgeLink.OtSimulator.csproj"
+    ]
+  }
+}

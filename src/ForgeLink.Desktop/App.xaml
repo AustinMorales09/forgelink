@@ -1,0 +1,69 @@
+<Application x:Class="ForgeLink.Desktop.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             ShutdownMode="OnMainWindowClose">
+    <Application.Resources>
+        <!-- High-contrast industrial palette, readable at arm's length and through safety glasses. -->
+        <SolidColorBrush x:Key="Bg" Color="#11161D" />
+        <SolidColorBrush x:Key="Surface" Color="#1A212B" />
+        <SolidColorBrush x:Key="Border" Color="#2D3744" />
+        <SolidColorBrush x:Key="Text" Color="#E6EAF0" />
+        <SolidColorBrush x:Key="Muted" Color="#9AA7B8" />
+        <SolidColorBrush x:Key="Accent" Color="#3B8EEA" />
+        <SolidColorBrush x:Key="Good" Color="#2E9E57" />
+        <SolidColorBrush x:Key="Warn" Color="#D98A1C" />
+        <SolidColorBrush x:Key="Bad" Color="#D64537" />
+
+        <Style TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource Text}" />
+            <Setter Property="FontSize" Value="16" />
+        </Style>
+
+        <Style x:Key="Label" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource Muted}" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="Margin" Value="0,10,0,4" />
+        </Style>
+
+        <Style TargetType="TextBox">
+            <Setter Property="FontSize" Value="20" />
+            <Setter Property="Padding" Value="8,6" />
+            <Setter Property="MinHeight" Value="44" />
+            <Setter Property="Background" Value="{StaticResource Bg}" />
+            <Setter Property="Foreground" Value="{StaticResource Text}" />
+            <Setter Property="BorderBrush" Value="{StaticResource Border}" />
+            <Setter Property="CaretBrush" Value="{StaticResource Text}" />
+        </Style>
+
+        <Style TargetType="Button">
+            <Setter Property="FontSize" Value="18" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="MinHeight" Value="56" />
+            <Setter Property="MinWidth" Value="120" />
+            <Setter Property="Margin" Value="0,0,10,10" />
+            <Setter Property="Padding" Value="16,8" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="Background" Value="#2A3542" />
+            <Setter Property="BorderBrush" Value="{StaticResource Border}" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Style.Triggers>
+                <Trigger Property="IsEnabled" Value="False">
+                    <Setter Property="Opacity" Value="0.45" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="Primary" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+            <Setter Property="Background" Value="{StaticResource Accent}" />
+        </Style>
+
+        <Style x:Key="Card" TargetType="Border">
+            <Setter Property="Background" Value="{StaticResource Surface}" />
+            <Setter Property="BorderBrush" Value="{StaticResource Border}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Padding" Value="18" />
+            <Setter Property="Margin" Value="8" />
+        </Style>
+    </Application.Resources>
+</Application>

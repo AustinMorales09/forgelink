@@ -1,0 +1,53 @@
+@page "/"
+@inject StoreAndForwardForgeLinkApi Api
+
+<h1>Handheld</h1>
+<p class="fl-muted">Material movement, cycle counts and lot lookup. Works offline: scans are saved on the device and synced when Wi-Fi returns.</p>
+
+<div class="m-tiles">
+    <a class="m-tile" href="inventory/move"><strong>Move material</strong><span>Scan label → from → to</span></a>
+    <a class="m-tile" href="inventory/count"><strong>Cycle count</strong><span>Blind count a location</span></a>
+    <a class="m-tile" href="inventory"><strong>Lookup</strong><span>What's in this location?</span></a>
+    <a class="m-tile" href="lots/trace"><strong>Lot trace</strong><span>Genealogy &amp; holds</span></a>
+    <a class="m-tile" href="quality"><strong>Inspection</strong><span>Record a measurement</span></a>
+    <a class="m-tile" href="dashboard"><strong>Line KPIs</strong><span>OEE &amp; downtime</span></a>
+</div>
+
+<h2>Sync queue</h2>
+<NoticeBanner Notice="_notice" />
+@if (_queued.Count == 0)
+{
+    <p class="fl-muted">Everything is synced.</p>
+}
+else
+{
+    <ul class="m-queue">
+        @foreach (var q in _queued)
+        {
+            <li class="@(q.State == QueuedCommandState.Rejected ? "fl-bad" : "")">
+                <strong>@q.Kind</strong> @q.Target · @q.CreatedUtc.ToLocalTime().ToString("HH:mm")
+                @if (q.LastError is not null)
+                {
+                    <br /><small>@q.State: @q.LastError</small>
+                }
+            </li>
+        }
+    </ul>
+}
+<button class="fl-btn fl-btn-primary" @onclick="SyncAsync">Sync now</button>
+
+@code {
+    private IReadOnlyList<QueuedCommand> _queued = [];
+    private Notice? _notice;
+
+    protected override async Task OnInitializedAsync() => _queued = await Api.Queue.ListAsync();
+
+    private async Task SyncAsync()
+    {
+        var (sent, rejected, remaining) = await Api.FlushAsync();
+        _notice = remaining == 0 && rejected == 0
+            ? Notice.Ok($"Synced {sent} item(s).")
+            : new Notice($"Sent {sent}, rejected {rejected}, {remaining} still waiting for a connection.", rejected > 0 ? NoticeKind.Error : NoticeKind.Info);
+        _queued = await Api.Queue.ListAsync();
+    }
+}

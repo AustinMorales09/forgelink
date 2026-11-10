@@ -1,0 +1,18 @@
+/* Handheld shell: thumb-reachable bottom nav, big tiles, always-visible connectivity. */
+body { padding-bottom: 64px; }
+.m-top { position: sticky; top: 0; z-index: 2; display: flex; justify-content: space-between; align-items: center; padding: .6rem 1rem; background: #0f1720; color: #fff; }
+.m-top.m-offline { background: var(--fl-bad); }
+.m-brand { color: #fff; font-weight: 700; text-decoration: none; }
+.m-status { font-size: .85rem; font-weight: 600; }
+.m-badge { margin-left: .5rem; padding: .1rem .5rem; border-radius: 999px; background: rgba(255,255,255,.2); }
+.m-main { padding: 1rem; }
+.m-bottom { position: fixed; bottom: 0; left: 0; right: 0; display: flex; background: var(--fl-surface); border-top: 1px solid var(--fl-border); }
+.m-bottom a { flex: 1; text-align: center; padding: .9rem 0; color: var(--fl-muted); text-decoration: none; font-weight: 600; font-size: .85rem; }
+.m-bottom a.active { color: var(--fl-accent); }
+.m-tiles { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; }
+.m-tile { display: block; padding: 1rem; min-height: 90px; background: var(--fl-surface); border: 1px solid var(--fl-border); border-radius: 10px; color: var(--fl-text); text-decoration: none; }
+.m-tile strong { display: block; font-size: 1.05rem; }
+.m-tile span { color: var(--fl-muted); font-size: .85rem; }
+.m-queue { padding-left: 1rem; }
+.fl-scan { min-width: 0; width: 100%; }
+#blazor-error-ui { display: none; position: fixed; bottom: 0; width: 100%; padding: 1rem; background: #b42318; color: #fff; }

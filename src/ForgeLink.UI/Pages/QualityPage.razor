@@ -1,0 +1,54 @@
+@page "/quality"
+@inject IForgeLinkApi Api
+
+<PageTitle>Quality check · ForgeLink</PageTitle>
+<h1>In-process inspection</h1>
+<p class="fl-muted">An out-of-spec measurement puts the lot on hold immediately and notifies the ERP.</p>
+
+<ScanInput Label="Scan work order or lot label" AutoFocus OnScan="OnScan" />
+
+<div class="fl-form">
+    <label class="fl-field"><span>Work order</span><input class="fl-input" @bind="_wo" /></label>
+    <label class="fl-field"><span>Lot</span><input class="fl-input" @bind="_lot" /></label>
+    <label class="fl-field"><span>Characteristic</span><input class="fl-input" @bind="_characteristic" /></label>
+    <label class="fl-field"><span>Nominal</span><input class="fl-input" type="number" step="any" @bind="_nominal" /></label>
+    <label class="fl-field"><span>Lower limit</span><input class="fl-input" type="number" step="any" @bind="_lsl" /></label>
+    <label class="fl-field"><span>Upper limit</span><input class="fl-input" type="number" step="any" @bind="_usl" /></label>
+    <label class="fl-field"><span>Measured</span><input class="fl-input" type="number" step="any" @bind="_measured" /></label>
+</div>
+<button class="fl-btn fl-btn-primary" @onclick="SubmitAsync">Record</button>
+<NoticeBanner Notice="_notice" />
+
+@code {
+    private string _wo = "", _lot = "", _characteristic = "Bore diameter (mm)";
+    private decimal _nominal = 42.000m, _lsl = 41.975m, _usl = 42.025m, _measured;
+    private Notice? _notice;
+
+    private void OnScan(ScanResult scan)
+    {
+        if (scan.Kind == ScanKind.WorkOrder)
+        {
+            _wo = scan.Value;
+            _lot = LotNumbering.ForWorkOrder(scan.Value, DateTime.UtcNow);
+        }
+        else if (scan.Lot is { } lot)
+        {
+            _lot = lot;
+        }
+    }
+
+    private async Task SubmitAsync()
+    {
+        try
+        {
+            var result = await Api.RecordQualityCheckAsync(new RecordQualityCheckRequest(_wo, _lot, _characteristic, _nominal, _lsl, _usl, _measured));
+            _notice = result.Result == "Pass"
+                ? Notice.Ok($"PASS: {result.Characteristic} = {result.Measured}")
+                : new Notice($"FAIL: lot {result.LotNumber} placed on hold. Move it to QA-HOLD.", NoticeKind.Error);
+        }
+        catch (Exception ex)
+        {
+            _notice = Notice.From(ex);
+        }
+    }
+}

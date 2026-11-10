@@ -1,0 +1,107 @@
+@inherits PollingComponent
+
+<div class="fl-toolbar">
+    <label class="fl-field fl-inline">
+        <span>Line</span>
+        <select class="fl-input" @bind="_line" @bind:after="RefreshAsync">
+            @foreach (var l in Lines)
+            {
+                <option value="@l">@l</option>
+            }
+        </select>
+    </label>
+    <label class="fl-field fl-inline">
+        <span>Window</span>
+        <select class="fl-input" @bind="_hours" @bind:after="RefreshAsync">
+            <option value="1">Last hour</option>
+            <option value="8">Last 8 h (shift)</option>
+            <option value="24">Last 24 h</option>
+        </select>
+    </label>
+    <span class="fl-muted">Updated @Format.Ago(LastRefreshUtc)</span>
+</div>
+
+<NoticeBanner Notice="LoadError" />
+
+@if (_kpi is { } k)
+{
+    <section class="fl-kpis">
+        <div class="fl-kpi @Format.OeeClass(k.Oee.Oee)">
+            <span>OEE</span><strong>@Format.Pct(k.Oee.Oee)</strong>
+            <small>A @Format.Pct(k.Oee.Availability) · P @Format.Pct(k.Oee.Performance) · Q @Format.Pct(k.Oee.Quality)</small>
+        </div>
+        <div class="fl-kpi">
+            <span>Good parts</span><strong>@k.Machines.Sum(m => m.GoodCount)</strong>
+            <small>@k.Machines.Sum(m => m.RejectCount) rejects</small>
+        </div>
+        <div class="fl-kpi">
+            <span>Downtime</span><strong>@k.DowntimePareto.Sum(d => d.Minutes).ToString("0") min</strong>
+            <small>@k.DowntimePareto.Sum(d => d.Occurrences) stops</small>
+        </div>
+        <div class="fl-kpi @(k.InventoryAccuracyPercent is null ? "" : k.InventoryAccuracyPercent >= 98 ? "fl-good" : "fl-warn")">
+            <span>Inventory accuracy</span>
+            <strong>@(k.InventoryAccuracyPercent is null ? "—" : k.InventoryAccuracyPercent.Value.ToString("0.0") + "%")</strong>
+            <small>@k.CycleCounts cycle counts</small>
+        </div>
+        <div class="fl-kpi @(k.Integration.DeadLettered > 0 ? "fl-bad" : k.Integration.Pending > 20 ? "fl-warn" : "fl-good")">
+            <span>ERP integration</span>
+            <strong>@k.Integration.Pending pending</strong>
+            <small>@k.Integration.DeadLettered dead-lettered · @k.Integration.SentLastHour sent/h</small>
+        </div>
+    </section>
+
+    <div class="fl-grid-2">
+        <section class="fl-card">
+            <h3>Machines</h3>
+            <table class="fl-table">
+                <thead><tr><th>Machine</th><th>State</th><th>OEE</th><th>Avail.</th><th>Perf.</th><th>Qual.</th><th>Down (min)</th></tr></thead>
+                <tbody>
+                @foreach (var m in k.Machines)
+                {
+                    <tr>
+                        <td>@m.MachineCode</td>
+                        <td><span class="fl-pill @Format.StateClass(m.State)">@m.State</span></td>
+                        <td class="@Format.OeeClass(m.Oee.Oee)">@Format.Pct(m.Oee.Oee)</td>
+                        <td>@Format.Pct(m.Oee.Availability)</td>
+                        <td>@Format.Pct(m.Oee.Performance)</td>
+                        <td>@Format.Pct(m.Oee.Quality)</td>
+                        <td>@m.DowntimeMinutes</td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </section>
+
+        <section class="fl-card">
+            <h3>Downtime Pareto</h3>
+            <DowntimePareto Reasons="k.DowntimePareto" />
+        </section>
+    </div>
+
+    <section class="fl-card">
+        <h3>Hourly throughput</h3>
+        <ThroughputChart Points="k.Throughput" />
+    </section>
+}
+
+@code {
+    private LineKpiDto? _kpi;
+    private int _hours = 8;
+
+    private string _line = "L1";
+
+    [Parameter] public string Line { get; set; } = "L1";
+    [Parameter] public IReadOnlyList<string> Lines { get; set; } = ["L1", "L2"];
+
+    protected override Task OnInitializedAsync()
+    {
+        _line = Line;
+        return base.OnInitializedAsync();
+    }
+
+    protected override async Task LoadAsync(CancellationToken ct)
+    {
+        var to = DateTime.UtcNow;
+        _kpi = await Api.GetLineKpisAsync(_line, to.AddHours(-_hours), to, ct);
+    }
+}

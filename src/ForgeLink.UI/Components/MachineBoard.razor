@@ -1,0 +1,45 @@
+@inherits PollingComponent
+
+<NoticeBanner Notice="LoadError" />
+
+@if (!Loaded)
+{
+    <p class="fl-muted">Loading machines…</p>
+}
+else if (_machines.Count == 0)
+{
+    <p class="fl-muted">No machines configured@(Line is null ? "" : $" on {Line}").</p>
+}
+else
+{
+    <div class="fl-tiles">
+        @foreach (var m in _machines)
+        {
+            <article class="fl-tile @Format.StateClass(m.State)">
+                <header>
+                    <strong>@m.Code</strong>
+                    <span class="fl-pill">@m.State</span>
+                </header>
+                <p class="fl-muted">@m.Description</p>
+                @if (!string.IsNullOrEmpty(m.Reason))
+                {
+                    <p class="fl-reason">@m.Reason</p>
+                }
+                <dl>
+                    <dt>Job</dt><dd>@(m.CurrentWorkOrder ?? "—")</dd>
+                    <dt>Since</dt><dd>@Format.Ago(m.StateChangedAtUtc)</dd>
+                    <dt>Heartbeat</dt><dd>@Format.Ago(m.LastHeartbeatUtc)</dd>
+                </dl>
+            </article>
+        }
+    </div>
+}
+
+@code {
+    private IReadOnlyList<MachineStatusDto> _machines = [];
+
+    [Parameter] public string? Line { get; set; }
+
+    protected override async Task LoadAsync(CancellationToken ct) =>
+        _machines = await Api.GetMachinesAsync(Line, ct);
+}

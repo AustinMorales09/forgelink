@@ -1,0 +1,35 @@
+@* Keyboard-wedge friendly scan box: scanners "type" the barcode then send Enter. *@
+<label class="fl-field">
+    @if (!string.IsNullOrEmpty(Label))
+    {
+        <span>@Label</span>
+    }
+    <input @ref="_input" class="fl-input fl-scan" placeholder="@Placeholder" autocomplete="off" inputmode="@InputMode"
+           @bind="_value" @bind:event="oninput" @onkeydown="OnKeyDownAsync" />
+</label>
+
+@code {
+    private ElementReference _input;
+    private string _value = "";
+
+    [Parameter] public string? Label { get; set; }
+    [Parameter] public string Placeholder { get; set; } = "Scan barcode or type, then Enter";
+    [Parameter] public bool AutoFocus { get; set; }
+    [Parameter] public string InputMode { get; set; } = "text";
+    [Parameter] public EventCallback<ScanResult> OnScan { get; set; }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && AutoFocus) await FocusAsync();
+    }
+
+    public ValueTask FocusAsync() => _input.FocusAsync();
+
+    private async Task OnKeyDownAsync(KeyboardEventArgs e)
+    {
+        if (e.Key != "Enter" || string.IsNullOrWhiteSpace(_value)) return;
+        var result = ScanParser.Parse(_value);
+        _value = "";
+        await OnScan.InvokeAsync(result);
+    }
+}
