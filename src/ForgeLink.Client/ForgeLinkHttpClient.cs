@@ -42,6 +42,9 @@ public sealed class ForgeLinkHttpClient(HttpClient http) : IForgeLinkApi
     public Task<LineKpiDto> GetLineKpisAsync(string line, DateTime fromUtc, DateTime toUtc, CancellationToken ct = default) =>
         GetAsync<LineKpiDto>($"api/kpis/lines/{Esc(line)}{Query(("fromUtc", fromUtc.ToString("O")), ("toUtc", toUtc.ToString("O")))}", ct);
 
+    public Task<IReadOnlyList<DailyOeeDto>> GetDailyOeeAsync(string? line, DateOnly from, DateOnly to, CancellationToken ct = default) =>
+        GetAsync<IReadOnlyList<DailyOeeDto>>($"api/reports/oee/daily{Query(("line", line), ("from", from.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture)), ("to", to.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture)))}", ct);
+
     public Task<IntegrationHealthDto> GetIntegrationHealthAsync(CancellationToken ct = default) =>
         GetAsync<IntegrationHealthDto>("api/integration/health", ct);
 

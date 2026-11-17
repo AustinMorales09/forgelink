@@ -1,6 +1,7 @@
 using ForgeLink.Application.Common;
 using ForgeLink.Application.Equipment;
 using ForgeLink.Application.Integration;
+using ForgeLink.Application.Reporting;
 using ForgeLink.Infrastructure.Erp;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -73,4 +74,14 @@ public sealed class MachineWatchdogWorker(IServiceScopeFactory scopes, ILogger<M
 
     protected override Task RunOnceAsync(IServiceProvider services, CancellationToken ct) =>
         services.GetRequiredService<TelemetryService>().MarkStaleMachinesOfflineAsync(ct);
+}
+
+/// <summary>Runs the daily OEE rollup pipeline on a short cadence so today's partial row stays current.</summary>
+public sealed class KpiRollupWorker(IServiceScopeFactory scopes, IOptions<ReportingOptions> options, ILogger<KpiRollupWorker> logger)
+    : PeriodicWorker(scopes, logger)
+{
+    protected override TimeSpan Interval => TimeSpan.FromMinutes(Math.Max(1, options.Value.RollupIntervalMinutes));
+
+    protected override Task RunOnceAsync(IServiceProvider services, CancellationToken ct) =>
+        services.GetRequiredService<KpiRollupService>().RunAsync(ct);
 }

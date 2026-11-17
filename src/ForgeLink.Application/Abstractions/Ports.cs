@@ -27,6 +27,7 @@ public interface IAppDbContext
     DbSet<AuditEntry> AuditEntries { get; }
     DbSet<IdempotencyRecord> IdempotencyRecords { get; }
     DbSet<SyncState> SyncStates { get; }
+    DbSet<DailyMachineKpi> DailyMachineKpis { get; }
 
     Microsoft.EntityFrameworkCore.ChangeTracking.ChangeTracker ChangeTracker { get; }
 

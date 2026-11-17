@@ -4,6 +4,7 @@ using ForgeLink.Application.Inventory;
 using ForgeLink.Application.Production;
 using ForgeLink.Application.Quality;
 using ForgeLink.Application.Reporting;
+using ForgeLink.Domain;
 using ForgeLink.Contracts;
 using ForgeLink.Infrastructure.Erp;
 using ForgeLink.Web.Security;
@@ -50,9 +51,18 @@ public sealed class InventoryController(InventoryService service) : ControllerBa
     public Task<IReadOnlyList<InventoryBalanceDto>> Query([FromQuery] string? sku, [FromQuery] string? location, CancellationToken ct) =>
         service.QueryAsync(sku, location, ct);
 
+    /// <summary>Most recent inventory transactions (simple list kept for existing station clients; prefer <c>/ledger</c>).</summary>
     [HttpGet("transactions")]
     public Task<IReadOnlyList<InventoryTransactionDto>> Transactions([FromQuery] int take = 50, CancellationToken ct = default) =>
         service.RecentTransactionsAsync(take, ct);
+
+    /// <summary>
+    /// The inventory ledger, newest first, with cursor pagination. Pass <c>nextCursor</c> from a response as
+    /// <c>cursor</c> to fetch the next page; <c>nextCursor</c> is null on the last page. <c>limit</c> is 1–500 (default 50).
+    /// </summary>
+    [HttpGet("ledger")]
+    public Task<PageDto<InventoryTransactionDto>> Ledger([FromQuery] string? sku, [FromQuery] int? limit, [FromQuery] string? cursor, CancellationToken ct) =>
+        service.LedgerAsync(sku, limit, cursor, ct);
 
     [HttpPost("moves")]
     [Idempotent]
@@ -169,4 +179,35 @@ public sealed class ErpWebhookController(ErpSyncService sync, IOptions<ErpClient
         }
         return Accepted();
     }
+}
+
+/// <summary>Daily OEE reporting, fed by the rollup pipeline (<see cref="KpiRollupService"/>).</summary>
+[ApiController]
+[Route("api/reports/oee")]
+[Authorize(Policy = Policies.Operator)]
+public sealed class ReportsController(KpiRollupService rollup) : ControllerBase
+{
+    /// <summary>
+    /// One row per machine per plant-local day. <c>from</c>/<c>to</c> are inclusive dates (default: the last 14 days).
+    /// <c>format=csv</c> returns a spreadsheet-ready download; the default is JSON. Today's rows have <c>isPartial=true</c>.
+    /// </summary>
+    [HttpGet("daily")]
+    [ProducesResponseType<IReadOnlyList<DailyOeeDto>>(StatusCodes.Status200OK, "application/json", "text/csv")]
+    public async Task<IActionResult> Daily([FromQuery] string? line, [FromQuery] DateOnly? from, [FromQuery] DateOnly? to,
+        [FromQuery] string? format, CancellationToken ct)
+    {
+        var today = rollup.LocalDay(DateTime.UtcNow);
+        var end = to ?? today;
+        var start = from ?? end.AddDays(-13);
+        var rows = await rollup.GetDailyAsync(line, start, end, ct);
+        if (!string.Equals(format, "csv", StringComparison.OrdinalIgnoreCase)) return Ok(rows);
+
+        var name = $"oee-daily-{(string.IsNullOrWhiteSpace(line) ? "all" : line.Trim().ToUpperInvariant())}-{start:yyyy-MM-dd}-to-{end:yyyy-MM-dd}.csv";
+        return File(System.Text.Encoding.UTF8.GetBytes(Csv.DailyOee(rows)), "text/csv; charset=utf-8", name);
+    }
+
+    /// <summary>Runs the rollup now instead of waiting for the next scheduled run (supervisors only).</summary>
+    [HttpPost("rollup")]
+    [Authorize(Policy = Policies.Supervisor)]
+    public Task<KpiRollupResultDto> Rollup(CancellationToken ct) => rollup.RunAsync(ct);
 }

@@ -1,0 +1,145 @@
+@page "/reports/oee"
+@inherits PollingComponent
+
+<PageTitle>Daily OEE · ForgeLink</PageTitle>
+<PageHeader Section="Reporting" Icon="chart" Title="Daily OEE">
+    <Description>One row per machine per plant day, loaded by the rollup pipeline from hourly counters and downtime events. Today is shown so far and keeps updating.</Description>
+</PageHeader>
+
+<div class="fl-toolbar">
+    <label class="fl-field fl-inline">
+        <span>Line</span>
+        <select class="fl-input" @bind="_line" @bind:after="RefreshAsync">
+            <option value="">All lines</option>
+            <option value="L1">L1</option>
+            <option value="L2">L2</option>
+        </select>
+    </label>
+    <label class="fl-field fl-inline">
+        <span>Range</span>
+        <select class="fl-input" @bind="_days" @bind:after="RefreshAsync">
+            <option value="7">Last 7 days</option>
+            <option value="14">Last 14 days</option>
+            <option value="30">Last 30 days</option>
+        </select>
+    </label>
+    <span class="fl-spacer"></span>
+    @if (ShowCsvLink)
+    {
+        <a class="fl-btn fl-btn-ghost fl-btn-small" href="@CsvHref" download>Download CSV</a>
+    }
+    <LiveIndicator LastRefreshUtc="LastRefreshUtc" Stale="LoadError is not null" Push="PushConnected" />
+</div>
+
+<NoticeBanner Notice="LoadError" />
+
+@if (Loaded && _rows.Count == 0)
+{
+    <section class="fl-card">
+        <EmptyState Icon="chart" Title="No rollup data yet">The pipeline runs a few seconds after start-up and then every 10 minutes.</EmptyState>
+    </section>
+}
+else if (_rows.Count > 0)
+{
+    <section class="fl-card fl-card-flush">
+        <div class="fl-card-head"><h3><Icon Name="chart" />By day</h3><span class="fl-muted fl-small">line OEE = mean of its machines</span></div>
+        <div class="fl-scroll">
+            <table class="fl-table">
+                <thead>
+                <tr><th>Day</th><th>OEE</th><th class="fl-num">Availability</th><th class="fl-num">Performance</th><th class="fl-num">Quality</th><th class="fl-num">Good</th><th class="fl-num">Rejects</th><th class="fl-num">Downtime</th><th>Top reason</th></tr>
+                </thead>
+                <tbody>
+                @foreach (var d in _byDay)
+                {
+                    <tr>
+                        <td style="white-space:nowrap"><strong>@d.Day.ToString("ddd d MMM")</strong>@if (d.Partial) {<span class="fl-sub">so far</span>}</td>
+                        <td style="white-space:nowrap">
+                            <span class="fl-progress"><span style="width:@Format.Width(d.Oee)"></span></span>
+                            <span class="fl-small @Format.OeeClass(d.Oee)">@Format.Pct(d.Oee)</span>
+                        </td>
+                        <td class="fl-num">@Format.Pct(d.Availability)</td>
+                        <td class="fl-num">@Format.Pct(d.Performance)</td>
+                        <td class="fl-num">@Format.Pct(d.Quality)</td>
+                        <td class="fl-num">@d.Good.ToString("N0")</td>
+                        <td class="fl-num @(d.Reject > 0 ? "fl-warn" : "")">@d.Reject.ToString("N0")</td>
+                        <td class="fl-num">@d.DowntimeMinutes.ToString("N0") min</td>
+                        <td class="fl-mono fl-small">@(d.TopReason ?? "—")</td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <section class="fl-card fl-card-flush">
+        <div class="fl-card-head"><h3><Icon Name="machine" />Machine by day</h3><span class="fl-muted fl-small">hover a cell for A · P · Q</span></div>
+        <div class="fl-scroll">
+            <table class="fl-table fl-heat">
+                <thead>
+                <tr><th>Machine</th>@foreach (var day in _dayColumns){<th class="fl-num">@day.ToString("d MMM")</th>}</tr>
+                </thead>
+                <tbody>
+                @foreach (var machine in _machines)
+                {
+                    <tr>
+                        <th scope="row" class="fl-mono">@machine</th>
+                        @foreach (var day in _dayColumns)
+                        {
+                            var cell = _rows.FirstOrDefault(r => r.MachineCode == machine && r.Day == day);
+                            if (cell is null)
+                            {
+                                <td class="fl-num fl-muted">—</td>
+                            }
+                            else
+                            {
+                                <td class="fl-num @Format.OeeClass(cell.Oee)" style="--heat:@Format.Width(cell.Oee)"
+                                    title="@($"{cell.MachineCode} {cell.Day:d MMM}: A {Format.Pct(cell.Availability)} · P {Format.Pct(cell.Performance)} · Q {Format.Pct(cell.Quality)}{(cell.TopDowntimeReason is null ? "" : " · top stop " + cell.TopDowntimeReason)}")">@Format.Pct(cell.Oee)</td>
+                            }
+                        }
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </section>
+}
+
+@code {
+    private string _line = "";
+    private int _days = 7;
+    private IReadOnlyList<DailyOeeDto> _rows = [];
+    private List<DaySummary> _byDay = [];
+    private List<string> _machines = [];
+    private List<DateOnly> _dayColumns = [];
+    private DateOnly _from;
+    private DateOnly _to;
+
+    /// <summary>The CSV link targets the server's API, so hosts that are not the server (MAUI) can turn it off.</summary>
+    [Parameter] public bool ShowCsvLink { get; set; } = true;
+
+    private string CsvHref => $"api/reports/oee/daily?format=csv&from={_from:yyyy-MM-dd}&to={_to:yyyy-MM-dd}" + (_line == "" ? "" : "&line=" + _line);
+
+    private sealed record DaySummary(DateOnly Day, bool Partial, double Oee, double Availability, double Performance, double Quality,
+        int Good, int Reject, double DowntimeMinutes, string? TopReason);
+
+    // The rollup only changes when telemetry does; ignore inventory and work-order traffic.
+    protected override bool Wants(ShopFloorChange change) => change.Kind == ShopFloorChangeKind.Machine;
+
+    protected override async Task LoadAsync(CancellationToken ct)
+    {
+        _to = DateOnly.FromDateTime(DateTime.Now);
+        _from = _to.AddDays(-(_days - 1));
+        _rows = await Api.GetDailyOeeAsync(_line == "" ? null : _line, _from, _to.AddDays(1), ct);
+
+        // Line-level OEE for a day = mean of its machines' OEE components (same convention as the live dashboard).
+        _byDay = _rows.GroupBy(r => r.Day).OrderByDescending(g => g.Key).Select(g => new DaySummary(
+                g.Key, g.Any(r => r.IsPartial),
+                g.Average(r => r.Availability) * g.Average(r => r.Performance) * g.Average(r => r.Quality),
+                g.Average(r => r.Availability), g.Average(r => r.Performance), g.Average(r => r.Quality),
+                g.Sum(r => r.GoodCount), g.Sum(r => r.RejectCount), g.Sum(r => r.DowntimeMinutes),
+                g.Where(r => r.TopDowntimeReason is not null).OrderByDescending(r => r.DowntimeMinutes).Select(r => r.TopDowntimeReason).FirstOrDefault()))
+            .ToList();
+        _machines = _rows.Select(r => r.MachineCode).Distinct().Order().ToList();
+        _dayColumns = _rows.Select(r => r.Day).Distinct().Order().ToList();
+    }
+}

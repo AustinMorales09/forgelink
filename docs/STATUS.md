@@ -1,6 +1,6 @@
 # ForgeLink v0.1: status, data storage, and integration roadmap
 
-_As of 2026-11-09 (first commit)._
+_As of 2026-11-17 (v0.2: API docs + rate limits + pagination, push updates, daily OEE pipeline, stack smoke test in CI)._
 
 ## 1. What works today
 
@@ -24,7 +24,11 @@ Legend: ✅ verified by running it · 🧪 covered by automated tests · 📝 wr
 | Auth: Microsoft Entra ID (JWT for API, OIDC for UI) | 📝 needs a real tenant / app registration |
 | Audit trail (before/after JSON), optimistic concurrency on balances and work orders | 🧪 |
 | SQL Server provider + stored procedures (Pareto, purge, reconciliation) | 📝 SQLite was used for all runs; SQL Server path not executed |
-| SignalR hub (`/hubs/shopfloor`) | 📝 no client subscribes yet |
+| SignalR hub (`/hubs/shopfloor`) + in-process events: Blazor views refresh ~0.4 s after a change (coalesced), 30 s safety poll | ✅ 🧪 (a real SignalR client receives hub events in the integration tests; machine card updated within 1 s in the browser) |
+| OpenAPI 3.1 document (`/openapi/v1.json`) with security schemes and XML-doc summaries; Scalar reference at `/docs` | ✅ 🧪 |
+| Per-caller token-bucket rate limiting on `/api` (separate telemetry budget), 429 problem details + `Retry-After` | 🧪 |
+| Keyset (cursor) pagination: `GET /api/inventory/ledger?limit=&cursor=` | ✅ 🧪 |
+| Daily OEE pipeline: `KpiRollupWorker` → `DailyMachineKpis` (plant time zone, DST, late-data window, idempotent upsert); `GET /api/reports/oee/daily` (JSON/CSV), `POST …/rollup`; `/reports/oee` page with heat map | ✅ 🧪 |
 
 ### Clients
 | Capability | Status |
@@ -32,6 +36,7 @@ Legend: ✅ verified by running it · 🧪 covered by automated tests · 📝 wr
 | Shared Razor UI library used by both Blazor Server and MAUI | ✅ |
 | **MAUI Blazor Hybrid (Windows)**: home, lookup with live server data, offline indicator | ✅ |
 | **MAUI (Android)**: signed debug APK builds | 📝 not run on a device or emulator |
+| MAUI live updates via `HubShopFloorEvents` (SignalR client, capped-backoff reconnect) | 🧪 client class tested against the server; 📝 not run inside the MAUI app |
 | Offline store-and-forward client (SQLite queue, ordered replay with original keys, rejected-item quarantine) | 🧪 (integration test drains a queue into the live server) |
 | **WPF operator station**: badge / WO scanning, start / pause / complete, weigh-and-count, report, ZPL label, offline queue, F5/F9 keys | ✅ window opens, connects and shows live machine state · 📝 scan-to-report workflow not exercised by hand |
 | Device adapters: GS1-128 / DataMatrix scan parser, ZPL label builder (injection-safe), scale protocol parser, serial scale, TCP 9100 printer | 🧪 parsers / builders · 📝 real serial and TCP hardware |
@@ -41,12 +46,14 @@ Legend: ✅ verified by running it · 🧪 covered by automated tests · 📝 wr
 |---|---|
 | ERP simulator (REST, API key, chaos 503s + latency, 422 validation, idempotency, signed webhooks) | ✅ |
 | OT simulator (5 machines over MQTT, breakdowns with reason codes) | ✅ |
-| 57 unit + 8 integration tests | ✅ all passing |
-| GitHub Actions CI (build with warnings-as-errors, tests, vulnerable-package gate, MAUI Android, container images) | 📝 first run happens on push |
-| Dockerfiles + `docker-compose.yml` (SQL Server, Mosquitto) | 📝 not run |
+| 71 unit + 21 integration tests | ✅ all passing |
+| GitHub Actions CI (build with warnings-as-errors, tests, vulnerable-package gate, MAUI Android) | ✅ green since the first push |
+| Dockerfiles + `docker-compose.yml` (SQL Server, Mosquitto) + `tools/smoke/stack-smoke.sh`, run by the CI `stack` job | 📝 first run happens on the next push (no Docker on the dev machine) |
 
 ### Known limitations in v0.1
-* Schema is created with `EnsureCreated`; there are no EF migrations yet. Changing the model means deleting the dev database.
+* Schema is created with `EnsureCreated`; there are no EF migrations yet. Changing the model means deleting the dev database (v0.2 added `DailyMachineKpis`, so delete `forgelink.db` once after upgrading).
+* The OEE rollup assumes planned time = `Reporting:PlannedHoursPerDay` for every machine; there is no shift calendar yet. Counters are hourly UTC buckets, so plants in half-hour-offset time zones get day boundaries rounded to the hour.
+* Rate-limit buckets live in process memory; behind several instances use a distributed limiter (or the gateway's) instead.
 * The outbox dispatcher has no leader lease, so run it on a single instance (idempotency keeps duplicates harmless, but they waste calls).
 * The ERP simulator keeps everything in memory, so restarting it forgets bookings and resets work-order numbering.
 * The MAUI app uses typed / keyboard-wedge scanning only; there is no camera scanning yet.

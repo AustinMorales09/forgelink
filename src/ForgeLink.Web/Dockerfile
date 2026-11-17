@@ -12,5 +12,6 @@ COPY --from=build /app .
 USER $APP_UID
 ENV ASPNETCORE_URLS=http://+:8080
 EXPOSE 8080
-HEALTHCHECK --interval=30s --timeout=3s CMD wget -qO- http://localhost:8080/health/live || exit 1
+# No Docker HEALTHCHECK: the slim aspnet image ships without curl/wget. Orchestrators probe /health/live and
+# /health/ready over HTTP instead (Kubernetes probes, Azure Container Apps, or tools/smoke/stack-smoke.sh in CI).
 ENTRYPOINT ["dotnet", "ForgeLink.Web.dll"]

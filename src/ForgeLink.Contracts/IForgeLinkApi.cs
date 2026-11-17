@@ -14,6 +14,7 @@ public interface IForgeLinkApi
     // Equipment & KPIs
     Task<IReadOnlyList<MachineStatusDto>> GetMachinesAsync(string? line = null, CancellationToken ct = default);
     Task<LineKpiDto> GetLineKpisAsync(string line, DateTime fromUtc, DateTime toUtc, CancellationToken ct = default);
+    Task<IReadOnlyList<DailyOeeDto>> GetDailyOeeAsync(string? line, DateOnly from, DateOnly to, CancellationToken ct = default);
     Task<IntegrationHealthDto> GetIntegrationHealthAsync(CancellationToken ct = default);
 
     // Production

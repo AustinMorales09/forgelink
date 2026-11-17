@@ -175,6 +175,15 @@ internal static class ModelConfiguration
             e.HasIndex(x => x.CreatedAtUtc);
         });
 
+        model.Entity<DailyMachineKpi>(e =>
+        {
+            e.HasKey(x => new { x.MachineCode, x.Day });
+            e.Property(x => x.MachineCode).HasMaxLength(Code);
+            e.Property(x => x.Line).HasMaxLength(20);
+            e.Property(x => x.TopDowntimeReason).HasMaxLength(Code);
+            e.HasIndex(x => new { x.Line, x.Day });
+        });
+
         model.Entity<SyncState>(e =>
         {
             e.HasKey(x => x.Name);

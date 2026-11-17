@@ -30,6 +30,7 @@ public sealed class ForgeLinkDbContext(DbContextOptions<ForgeLinkDbContext> opti
     public DbSet<AuditEntry> AuditEntries => Set<AuditEntry>();
     public DbSet<IdempotencyRecord> IdempotencyRecords => Set<IdempotencyRecord>();
     public DbSet<SyncState> SyncStates => Set<SyncState>();
+    public DbSet<DailyMachineKpi> DailyMachineKpis => Set<DailyMachineKpi>();
 
     protected override void ConfigureConventions(ModelConfigurationBuilder builder)
     {

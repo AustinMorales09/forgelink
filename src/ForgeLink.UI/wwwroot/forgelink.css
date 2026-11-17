@@ -455,3 +455,10 @@ select.fl-input {
 .fl-back:hover { color: var(--fl-text); }
 .fl-changes { display: block; max-width: 520px; font-family: var(--fl-mono); font-size: .76rem; color: var(--fl-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 @media (min-width: 640px) { .fl-span-2 { grid-column: span 2; } }
+
+/* Daily OEE heat map: tint each cell by its band colour; the number stays the primary signal. */
+.fl-heat td.fl-num { font-variant-numeric: tabular-nums; }
+.fl-heat td.fl-good { background: color-mix(in srgb, var(--fl-good) 14%, transparent); }
+.fl-heat td.fl-warn { background: color-mix(in srgb, var(--fl-warn) 16%, transparent); }
+.fl-heat td.fl-bad { background: color-mix(in srgb, var(--fl-bad) 14%, transparent); }
+.fl-heat th[scope="row"] { font-weight: 600; text-align: left; white-space: nowrap; }

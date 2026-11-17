@@ -18,6 +18,7 @@ public static class DependencyInjection
     {
         services.Configure<ForgeLinkOptions>(configuration.GetSection(ForgeLinkOptions.Section));
         services.Configure<OutboxOptions>(configuration.GetSection(OutboxOptions.Section));
+        services.Configure<ReportingOptions>(configuration.GetSection(ReportingOptions.Section));
 
         services.TryAddSingleton(TimeProvider.System);
         services.TryAddSingleton<IShopFloorNotifier, NullShopFloorNotifier>();
@@ -29,6 +30,7 @@ public static class DependencyInjection
         services.AddScoped<LotTraceService>();
         services.AddScoped<TelemetryService>();
         services.AddScoped<KpiService>();
+        services.AddScoped<KpiRollupService>();
         services.AddScoped<OutboxProcessor>();
         services.AddScoped<ErpSyncService>();
         services.AddScoped<IntegrationAdminService>();

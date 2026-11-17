@@ -50,12 +50,20 @@ jobs:
       - run: dotnet workload install maui-android
       - run: dotnet build src/ForgeLink.Mobile/ForgeLink.Mobile.csproj -c Release -f net10.0-android
 
-  containers:
-    name: Container images
+  stack:
+    name: Container stack smoke test (SQL Server, MQTT, ERP)
     runs-on: ubuntu-latest
     needs: build-test
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
-      - run: docker build -f src/ForgeLink.Web/Dockerfile -t forgelink-web:${{ github.sha }} .
-      - run: docker build -f tools/ForgeLink.ErpSimulator/Dockerfile -t forgelink-erp-sim:${{ github.sha }} .
-      - run: docker build -f tools/ForgeLink.OtSimulator/Dockerfile -t forgelink-ot-sim:${{ github.sha }} .
+      - name: Build images and start the stack
+        run: docker compose up -d --build
+      - name: Smoke test
+        run: bash tools/smoke/stack-smoke.sh
+      - name: Container logs
+        if: failure()
+        run: docker compose logs --no-color --tail=300
+      - name: Tear down
+        if: always()
+        run: docker compose down -v

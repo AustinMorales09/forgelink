@@ -38,4 +38,13 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IForgeLinkApi>(sp => sp.GetRequiredService<StoreAndForwardForgeLinkApi>());
         return services;
     }
+
+    /// <summary>Adds push updates over SignalR (<see cref="HubShopFloorEvents"/>), so shared live views refresh on change.</summary>
+    public static IServiceCollection AddForgeLinkLiveUpdates(this IServiceCollection services)
+    {
+        services.AddSingleton(sp => new HubShopFloorEvents(
+            sp.GetRequiredService<IOptions<ForgeLinkClientOptions>>(), sp.GetRequiredService<ILogger<HubShopFloorEvents>>()));
+        services.AddSingleton<IShopFloorEvents>(sp => sp.GetRequiredService<HubShopFloorEvents>());
+        return services;
+    }
 }

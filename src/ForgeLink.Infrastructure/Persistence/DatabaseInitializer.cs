@@ -108,9 +108,13 @@ public static class DemoDataSeeder
         await db.SaveChangesAsync(ct);
     }
 
+    /// <summary>Days of telemetry generated for a fresh demo database (feeds the daily OEE report).</summary>
+    public const int HistoryDays = 14;
+
     /// <summary>
-    /// Eight hours of plausible telemetry (run segments, stops with reason codes, hourly counts) so the
-    /// dashboard has a realistic shift on first launch. Deterministic seed: the same demo every time.
+    /// Two weeks of plausible telemetry (run segments, stops with reason codes, hourly counts) so the dashboard has a
+    /// realistic shift and the daily OEE report a trend on first launch. Days differ: speed, scrap and the odd long
+    /// breakdown vary per machine per day. Deterministic seed: the same demo every time.
     /// </summary>
     private static void AddShiftHistory(IAppDbContext db, DateTime nowUtc)
     {
@@ -120,13 +124,36 @@ public static class DemoDataSeeder
 
         foreach (var machine in db.Machines.Local.ToList())
         {
-            var cursor = nowUtc.AddHours(-8);
-            var rejectRate = 0.015 + rng.NextDouble() * 0.03;
-            var speedLoss = 1.08 + rng.NextDouble() * 0.17;   // real cycles run 8-25 % slower than ideal
+            var cursor = nowUtc.AddDays(-HistoryDays);
+            var baseReject = 0.015 + rng.NextDouble() * 0.03;
+            var baseSpeedLoss = 1.08 + rng.NextDouble() * 0.17;   // real cycles run 8-25 % slower than ideal
+            var rejectRate = baseReject;
+            var speedLoss = baseSpeedLoss;
+            var day = DateTime.MinValue;
+            var breakdownDue = DateTime.MaxValue;
             double carry = 0;
 
             while (cursor < stop)
             {
+                if (cursor.Date != day)
+                {
+                    // New day: drift speed and scrap a little, and roughly one day in five has a long breakdown.
+                    day = cursor.Date;
+                    speedLoss = baseSpeedLoss * (0.95 + rng.NextDouble() * 0.15);
+                    rejectRate = baseReject * (0.6 + rng.NextDouble() * 1.2);
+                    breakdownDue = rng.Next(5) == 0 ? day.AddHours(rng.Next(2, 20)) : DateTime.MaxValue;
+                }
+
+                if (cursor >= breakdownDue)
+                {
+                    breakdownDue = DateTime.MaxValue;
+                    var breakdown = new DowntimeEvent(machine.Code, cursor, "SPINDLE_FAULT");
+                    cursor = Min(cursor.AddMinutes(rng.Next(60, 200)), stop);
+                    breakdown.Close(cursor);
+                    db.DowntimeEvents.Add(breakdown);
+                    if (cursor >= stop) break;
+                }
+
                 var runEnd = Min(cursor.AddMinutes(rng.Next(25, 80)), stop);
                 while (cursor < runEnd)
                 {

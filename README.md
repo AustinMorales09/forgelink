@@ -14,7 +14,10 @@ It is a working reference system built to show, in one codebase, the skills a ma
 | **SQL Server** | EF Core model with constraints, indexes and optimistic concurrency; stored procedures for downtime Pareto, purge and reconciliation (`Persistence/Sql`) |
 | **Security** | Microsoft Entra ID (JWT for APIs, OIDC for UI, app roles), device API keys (hashed, constant-time compare), role policies, secure-by-default fallback policy |
 | **Auditability / traceability** | Append-only audit trail with before/after values, immutable inventory ledger, lot genealogy (components and where-used), segregation of duties on cycle-count approvals |
-| **Engineering practice** | Clean architecture, DI everywhere, 65 automated tests against real SQLite and the real HTTP pipeline, central package management, CI with vulnerability gate, containers |
+| **REST API** | OpenAPI 3.1 document + interactive reference at `/docs`, XML-doc summaries, Idempotency-Key on every command, RFC 9457 problem details, per-caller token-bucket rate limits with `Retry-After`, keyset (cursor) pagination on the inventory ledger |
+| **Real-time** | SignalR hub (`/hubs/shopfloor`) plus in-process events: dashboards refresh about 0.4 s after a change instead of polling; devices reconnect with capped backoff and fall back to slow polling |
+| **Data pipeline** | Daily OEE rollup: extracts hourly counters and downtime, computes A/P/Q per machine per plant-local day (DST-aware), upserts a reporting table idempotently, recomputes a late-data window; JSON and CSV export, heat-map report page |
+| **Engineering practice** | Clean architecture, DI everywhere, 92 automated tests against real SQLite and the real HTTP pipeline, central package management, CI with vulnerability gate, and a CI job that boots the full Docker Compose stack (SQL Server, Mosquitto, simulators) and runs an end-to-end smoke test |
 
 ---
 
@@ -107,6 +110,8 @@ Then open:
 |---|---|
 | http://localhost:5100 | Blazor plant dashboard (OEE, Pareto, machines) |
 | http://localhost:5100/integration | MVC integration console (outbox, dead letters, audit) |
+| http://localhost:5100/reports/oee | Daily OEE report (rollup pipeline output, CSV download) |
+| http://localhost:5100/docs | Interactive API reference (Scalar) over the OpenAPI document |
 | http://localhost:5100/openapi/v1.json | OpenAPI document |
 | http://localhost:5080 | ERP simulator status: bookings by type, chaos settings |
 
@@ -115,7 +120,7 @@ MAUI app: `dotnet workload install maui-windows maui-android`, then run `src/For
 
 > If .NET was installed per-user (not under `C:\Program Files\dotnet`), set `DOTNET_ROOT=%USERPROFILE%\.dotnet` before launching the built `ForgeLink.Station.exe` / `ForgeLink.Mobile.exe` directly; otherwise the app host shows "You must install .NET".
 
-Full stack on SQL Server + Mosquitto: `docker compose up --build`.
+Full stack on SQL Server + Mosquitto: `docker compose up --build`, then `bash tools/smoke/stack-smoke.sh` to check it end to end (CI runs exactly this on every push).
 
 ### Five-minute demo script
 
@@ -132,9 +137,10 @@ Full stack on SQL Server + Mosquitto: `docker compose up --build`.
 dotnet test ForgeLink.Core.slnf
 ```
 
-* **57 unit tests**: domain rules (overrun tolerance, segregation of duties, out-of-order telemetry, OEE maths), GS1/scale/ZPL parsing,
-  and application use cases against a **real relational database** (SQLite in-memory). These cover atomic rollback, outbox ordering and dead-lettering, ERP sync conflicts, optimistic concurrency, and the watchdog.
-* **8 integration tests** boot the real ASP.NET Core pipeline with `WebApplicationFactory`. They cover idempotent replay over HTTP, problem-details codes, API-key and role enforcement, HMAC webhook verification, MVC and Blazor rendering, and the offline client draining its queue into the live server.
+* **71 unit tests**: domain rules (overrun tolerance, segregation of duties, out-of-order telemetry, OEE maths), GS1/scale/ZPL parsing,
+  and application use cases against a **real relational database** (SQLite in-memory). These cover atomic rollback, outbox ordering and dead-lettering, ERP sync conflicts, optimistic concurrency, the watchdog, cursor pagination (ties, rows inserted mid-walk, tampered cursors) and the OEE rollup (midnight-spanning stops, plant time zone, 25-hour DST day, late data, idempotent re-runs).
+* **21 integration tests** boot the real ASP.NET Core pipeline with `WebApplicationFactory`. They cover idempotent replay over HTTP, problem-details codes, API-key and role enforcement, HMAC webhook verification, MVC and Blazor rendering, the offline client draining its queue into the live server, the OpenAPI document, rate limiting (429 + `Retry-After`), CSV export, and a real SignalR client receiving hub events.
+* **Stack smoke test** (`tools/smoke/stack-smoke.sh`, CI job `stack`): SQL Server schema and stored procedures, MQTT from the OT simulator through Mosquitto, outbox delivery to the ERP simulator under 15 % injected failures, the rollup on SQL Server, CSV export and pagination.
 
 ---
 
@@ -145,4 +151,6 @@ dotnet test ForgeLink.Core.slnf
 * **Store-and-forward on devices** ([ADR 0002](docs/adr/0002-offline-store-and-forward.md)). Wi-Fi dead spots in racking and switch reboots are normal. Commands queue in SQLite (WAL, `synchronous=FULL`) with their idempotency key and replay in order.
 * **One UI codebase for web and handheld** ([ADR 0003](docs/adr/0003-shared-blazor-ui.md)). The Razor components depend only on `IForgeLinkApi`. The server binds it in-process (scoped per call, no DbContext held by a circuit), while devices bind it to HTTP with an offline queue.
 * **Secure by default.** A fallback authorization policy means every endpoint requires an authenticated user unless it opts out. Devices use hashed API keys, people use Entra ID, and the development scheme refuses to start outside Development.
+* **Push, but never depend on it.** Live views subscribe to change events (in-process on the server, SignalR on devices) and coalesce bursts into one reload; a 30 s safety poll keeps a view correct when the connection drops. Events carry only "what changed", and clients re-read over the API, so the hub contract stays tiny.
+* **Reporting is a pipeline, not a query.** Daily OEE is computed once into a keyed table (machine, plant day) by an idempotent job with a watermark and a late-data window, so reports are cheap, stable and exportable, and a gateway replaying yesterday's backlog still lands in the right day.
 * **Quantities are `decimal(18,4)`, timestamps are UTC end to end** (enforced by EF value converters), and enums are stored as strings for readable SQL and safe reordering.

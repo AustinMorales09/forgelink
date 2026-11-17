@@ -26,6 +26,8 @@ public static class MauiProgram
             o.ApiKey = Preferences.Default.Get("ForgeLinkApiKey", "dev-handheld-01");
             o.OfflineDatabasePath = Path.Combine(FileSystem.AppDataDirectory, "handheld-offline.db");
         });
+        // Push updates from /hubs/shopfloor; the shared views fall back to polling while it is disconnected.
+        builder.Services.AddForgeLinkLiveUpdates();
         builder.Services.AddSingleton<ConnectivitySync>();
 
         return builder.Build();

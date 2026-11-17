@@ -27,12 +27,14 @@ builder.Services.AddControllersWithViews();
 builder.Services.AddRazorComponents().AddInteractiveServerComponents();
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddSignalR();
+builder.Services.AddSingleton<InProcessShopFloorEvents>();
+builder.Services.AddSingleton<IShopFloorEvents>(sp => sp.GetRequiredService<InProcessShopFloorEvents>());
 builder.Services.AddSingleton<IShopFloorNotifier, SignalRShopFloorNotifier>();
 builder.Services.AddScoped<IForgeLinkApi, InProcessForgeLinkApi>();
 builder.Services.AddScoped<IdempotencyFilter>();
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<ApiExceptionHandler>();
-builder.Services.AddOpenApi();
+builder.Services.AddForgeLinkApiPlatform(builder.Configuration);
 builder.Services.AddHealthChecks().AddDbContextCheck<ForgeLinkDbContext>("database", tags: ["ready"]);
 
 var app = builder.Build();
@@ -47,17 +49,18 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseAuthentication();
+app.UseRateLimiter();
 app.UseAuthorization();
 app.UseAntiforgery();
 
 app.MapStaticAssets().AllowAnonymous();
 app.MapHealthChecks("/health/live", new() { Predicate = _ => false }).AllowAnonymous();
 app.MapHealthChecks("/health/ready", new() { Predicate = c => c.Tags.Contains("ready") }).AllowAnonymous();
-if (app.Environment.IsDevelopment()) app.MapOpenApi().AllowAnonymous();
+app.MapForgeLinkApiDocs();
 
 app.MapControllers();
 app.MapControllerRoute("integration", "integration/{action=Index}/{id?}", new { controller = "Integration" });
-app.MapHub<ShopFloorHub>("/hubs/shopfloor");
+app.MapHub<ShopFloorHub>("/" + ShopFloorHubMethods.Path);
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode()
     .AddAdditionalAssemblies(typeof(UiAssembly).Assembly);

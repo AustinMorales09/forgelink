@@ -74,7 +74,9 @@ public sealed class TelemetryService(
         }
 
         await db.SaveChangesAsync(ct);
-        if (stateChanged) await notifier.MachineChangedAsync(code, ct);
+        // State changes move the machine board; counts move throughput and OEE. Views coalesce bursts on their side.
+        if (stateChanged || signal.SignalType!.Equals(MachineSignalTypes.Count, StringComparison.OrdinalIgnoreCase))
+            await notifier.MachineChangedAsync(code, ct);
         return true;
     }
 

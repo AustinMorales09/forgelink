@@ -40,6 +40,9 @@ public sealed class InProcessForgeLinkApi(IServiceScopeFactory scopes, Authentic
     public Task<LineKpiDto> GetLineKpisAsync(string line, DateTime fromUtc, DateTime toUtc, CancellationToken ct = default) =>
         Run(sp => S<KpiService>(sp).GetLineKpisAsync(line, fromUtc, toUtc, ct));
 
+    public Task<IReadOnlyList<DailyOeeDto>> GetDailyOeeAsync(string? line, DateOnly from, DateOnly to, CancellationToken ct = default) =>
+        Run(sp => S<KpiRollupService>(sp).GetDailyAsync(line, from, to, ct));
+
     public Task<IntegrationHealthDto> GetIntegrationHealthAsync(CancellationToken ct = default) =>
         Run(sp => S<IntegrationAdminService>(sp).GetHealthAsync(ct));
 

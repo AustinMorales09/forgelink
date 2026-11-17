@@ -47,7 +47,8 @@ public static class Format
 
     public static string Ago(DateTime? utc)
     {
-        if (utc is null) return "never";
+        // Null or an unset (DateTime.MinValue) timestamp means the event has never happened.
+        if (utc is null || utc.Value.Year < 2000) return "never";
         var age = DateTime.UtcNow - utc.Value;
         return age.TotalSeconds < 60 ? $"{Math.Max(0, (int)age.TotalSeconds)}s ago"
             : age.TotalMinutes < 60 ? $"{(int)age.TotalMinutes}m ago"
@@ -80,25 +81,46 @@ public static class Format
 }
 
 /// <summary>
-/// Base for live views: loads once, then refreshes on a timer. Polling (rather than a push channel) keeps the same
-/// component working in Blazor Server and on a handheld whose Wi-Fi drops in and out of the racking.
+/// Base for live views: loads once, then refreshes when the shop floor changes. Changes arrive as push events
+/// (<see cref="IShopFloorEvents"/>: in-process on the server, SignalR on devices), coalesced so a burst of machine
+/// signals causes one reload. A slow poll stays on as a safety net, so a handheld whose Wi-Fi drops in and out of the
+/// racking, or a host with no push channel at all, still shows current data.
 /// </summary>
 public abstract class PollingComponent : ComponentBase, IDisposable
 {
+    /// <summary>With push connected, the timer only reloads if nothing has refreshed the view for this long.</summary>
+    public static readonly TimeSpan SafetyPollInterval = TimeSpan.FromSeconds(30);
+
+    /// <summary>Changes arriving within this window are folded into one reload.</summary>
+    public static readonly TimeSpan PushDebounce = TimeSpan.FromMilliseconds(400);
+
     private readonly CancellationTokenSource _cts = new();
+    private IShopFloorEvents? _events;
+    private int _reloadScheduled;
 
     [Inject] protected IForgeLinkApi Api { get; set; } = default!;
 
+    [Inject] private IServiceProvider Services { get; set; } = default!;
+
+    /// <summary>Poll interval when no push channel is connected.</summary>
     [Parameter] public int RefreshSeconds { get; set; } = 10;
 
     protected Notice? LoadError { get; private set; }
     protected bool Loaded { get; private set; }
     protected DateTime? LastRefreshUtc { get; private set; }
 
+    /// <summary>True while updates are pushed rather than polled (shown in the live indicator).</summary>
+    protected bool PushConnected => _events?.IsConnected == true;
+
     protected abstract Task LoadAsync(CancellationToken ct);
+
+    /// <summary>Which changes this view cares about. Default: all of them.</summary>
+    protected virtual bool Wants(ShopFloorChange change) => true;
 
     protected override async Task OnInitializedAsync()
     {
+        _events = (IShopFloorEvents?)Services.GetService(typeof(IShopFloorEvents));
+        if (_events is not null) _events.Changed += OnShopFloorChanged;
         await RefreshAsync();
         _ = PollAsync(_cts.Token);
     }
@@ -121,6 +143,36 @@ public abstract class PollingComponent : ComponentBase, IDisposable
         Loaded = true;
     }
 
+    private void OnShopFloorChanged(ShopFloorChange change)
+    {
+        if (_cts.IsCancellationRequested || !Wants(change)) return;
+        if (Interlocked.Exchange(ref _reloadScheduled, 1) == 1) return; // a reload is already on its way
+        _ = ReloadSoonAsync();
+    }
+
+    private async Task ReloadSoonAsync()
+    {
+        try
+        {
+            await Task.Delay(PushDebounce, _cts.Token);
+            Volatile.Write(ref _reloadScheduled, 0);
+            await ReloadOnRendererAsync();
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        catch (ObjectDisposedException)
+        {
+            // The circuit or view went away between the event and the reload.
+        }
+    }
+
+    private Task ReloadOnRendererAsync() => InvokeAsync(async () =>
+    {
+        await RefreshAsync();
+        StateHasChanged();
+    });
+
     private async Task PollAsync(CancellationToken ct)
     {
         using var timer = new PeriodicTimer(TimeSpan.FromSeconds(Math.Max(2, RefreshSeconds)));
@@ -128,20 +180,22 @@ public abstract class PollingComponent : ComponentBase, IDisposable
         {
             while (await timer.WaitForNextTickAsync(ct))
             {
-                await InvokeAsync(async () =>
-                {
-                    await RefreshAsync();
-                    StateHasChanged();
-                });
+                var recent = LastRefreshUtc is { } last && DateTime.UtcNow - last < SafetyPollInterval;
+                if (PushConnected && recent && LoadError is null) continue;
+                await ReloadOnRendererAsync();
             }
         }
         catch (OperationCanceledException)
+        {
+        }
+        catch (ObjectDisposedException)
         {
         }
     }
 
     public void Dispose()
     {
+        if (_events is not null) _events.Changed -= OnShopFloorChanged;
         _cts.Cancel();
         _cts.Dispose();
         GC.SuppressFinalize(this);

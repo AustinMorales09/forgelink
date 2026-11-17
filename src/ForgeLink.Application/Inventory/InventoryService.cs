@@ -37,6 +37,24 @@ public sealed class InventoryService(
             .ToList();
     }
 
+    /// <summary>The full inventory ledger, newest first, with keyset pagination (see <see cref="TimeCursor"/>).</summary>
+    public async Task<PageDto<InventoryTransactionDto>> LedgerAsync(string? sku, int? limit, string? cursor, CancellationToken ct)
+    {
+        var take = TimeCursor.ClampLimit(limit);
+        var after = TimeCursor.Decode(cursor);
+
+        var query = db.InventoryTransactions.AsNoTracking();
+        if (!string.IsNullOrWhiteSpace(sku)) query = query.Where(t => t.Sku == Text.Upper(sku));
+        if (after is { } c) query = query.Where(t => t.OccurredAtUtc <= c.AtUtc);
+
+        // Rows at the cursor's timestamp sort first, so skipping the ones already returned resumes exactly where the last page ended.
+        var rows = await query.OrderByDescending(t => t.OccurredAtUtc).ThenBy(t => t.Id)
+            .Skip(after?.SeenAtSameTime ?? 0).Take(take).ToListAsync(ct);
+
+        var items = rows.Select(t => t.ToDto()).ToList();
+        return new PageDto<InventoryTransactionDto>(items, TimeCursor.Next(items, take, t => t.OccurredAtUtc, after));
+    }
+
     public async Task<IReadOnlyList<InventoryTransactionDto>> RecentTransactionsAsync(int take, CancellationToken ct) =>
         (await db.InventoryTransactions.AsNoTracking().OrderByDescending(t => t.OccurredAtUtc).Take(Math.Clamp(take, 1, 500)).ToListAsync(ct))
         .Select(t => t.ToDto()).ToList();

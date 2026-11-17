@@ -40,6 +40,8 @@ else
 
     [Parameter] public string? Line { get; set; }
 
+    protected override bool Wants(ShopFloorChange change) => change.Kind is ShopFloorChangeKind.Machine or ShopFloorChangeKind.WorkOrder;
+
     protected override async Task LoadAsync(CancellationToken ct) =>
         _machines = await Api.GetMachinesAsync(Line, ct);
 }

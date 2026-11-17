@@ -1,7 +1,10 @@
-@* "Live · updated 4s ago" chip. Turns red when the last refresh failed, so stale numbers are never mistaken for live ones. *@
-<span class="fl-live @(Stale ? "fl-live-stale" : "")" role="status">@(Stale ? "Stale" : "Live") · updated @Format.Ago(LastRefreshUtc)</span>
+@* "Live · updated 4s ago" chip. Turns red when the last refresh failed, so stale numbers are never mistaken for live ones.
+   "Live" means changes are pushed to this view; "Polling" means it is falling back to the timer. *@
+<span class="fl-live @(Stale ? "fl-live-stale" : "")" role="status"
+      title="@(Push ? "Updates are pushed as the shop floor changes" : "No push connection: refreshing on a timer")">@(Stale ? "Stale" : Push ? "Live" : "Polling") · updated @Format.Ago(LastRefreshUtc)</span>
 
 @code {
     [Parameter] public DateTime? LastRefreshUtc { get; set; }
     [Parameter] public bool Stale { get; set; }
+    [Parameter] public bool Push { get; set; }
 }

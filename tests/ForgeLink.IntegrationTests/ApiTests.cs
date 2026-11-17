@@ -17,7 +17,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 namespace ForgeLink.IntegrationTests;
 
 /// <summary>Boots the real web host (Development auth, SQLite file, workers off) with a fake ERP.</summary>
-public sealed class ForgeLinkFactory : WebApplicationFactory<Program>
+public class ForgeLinkFactory : WebApplicationFactory<Program>
 {
     private readonly string _dbPath = Path.Combine(Path.GetTempPath(), $"forgelink-it-{Guid.NewGuid():N}.db");
 
@@ -31,7 +31,11 @@ public sealed class ForgeLinkFactory : WebApplicationFactory<Program>
         builder.UseSetting("Workers:Enabled", "false");
         builder.UseSetting("Erp:WebhookSecret", "test-secret");
         builder.ConfigureTestServices(services => services.AddSingleton<IErpClient>(Erp));
+        ConfigureMore(builder);
     }
+
+    /// <summary>Hook for fixtures that need extra settings (e.g. a tiny rate limit).</summary>
+    protected virtual void ConfigureMore(IWebHostBuilder builder) { }
 
     protected override void Dispose(bool disposing)
     {

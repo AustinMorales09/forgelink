@@ -55,6 +55,7 @@ public static class DependencyInjection
             if (mqtt.Enabled) services.AddHostedService<MqttTelemetryListener>();
             services.AddHostedService<OutboxDispatcherWorker>();
             services.AddHostedService<MachineWatchdogWorker>();
+            services.AddHostedService<KpiRollupWorker>();
             if (configuration.GetValue("Erp:SyncEnabled", true)) services.AddHostedService<ErpSyncWorker>();
         }
 

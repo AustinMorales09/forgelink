@@ -27,6 +27,7 @@ public sealed class StoreAndForwardForgeLinkApi(
     // ---------- queries: pass-through ----------
     public Task<IReadOnlyList<MachineStatusDto>> GetMachinesAsync(string? line = null, CancellationToken ct = default) => Query(api => api.GetMachinesAsync(line, ct));
     public Task<LineKpiDto> GetLineKpisAsync(string line, DateTime fromUtc, DateTime toUtc, CancellationToken ct = default) => Query(api => api.GetLineKpisAsync(line, fromUtc, toUtc, ct));
+    public Task<IReadOnlyList<DailyOeeDto>> GetDailyOeeAsync(string? line, DateOnly from, DateOnly to, CancellationToken ct = default) => Query(api => api.GetDailyOeeAsync(line, from, to, ct));
     public Task<IntegrationHealthDto> GetIntegrationHealthAsync(CancellationToken ct = default) => Query(api => api.GetIntegrationHealthAsync(ct));
     public Task<IReadOnlyList<WorkOrderDto>> GetWorkOrdersAsync(string? line = null, CancellationToken ct = default) => Query(api => api.GetWorkOrdersAsync(line, ct));
     public Task<WorkOrderDto?> GetWorkOrderAsync(string number, CancellationToken ct = default) => Query(api => api.GetWorkOrderAsync(number, ct));

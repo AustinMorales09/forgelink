@@ -111,3 +111,14 @@ public sealed record AuditEntryDto(long Id, string EntityType, string EntityKey,
 
 /// <summary>Inbound ERP event (webhook). Signed with HMAC-SHA256; see <see cref="WebhookSignature"/>.</summary>
 public sealed record ErpWebhookEvent(string EventType, string? WorkOrderNumber, string? Sku);
+
+/// <summary>One page of a keyset-paginated list. Pass <see cref="NextCursor"/> back as <c>cursor</c>; null means the last page.</summary>
+public sealed record PageDto<T>(IReadOnlyList<T> Items, string? NextCursor);
+
+/// <summary>One machine-day from the daily OEE rollup (fractions are 0–1).</summary>
+public sealed record DailyOeeDto(
+    DateOnly Day, string MachineCode, string Line, double PlannedMinutes, double DowntimeMinutes, int GoodCount, int RejectCount,
+    double Availability, double Performance, double Quality, double Oee, string? TopDowntimeReason, bool IsPartial, DateTime ComputedAtUtc);
+
+/// <summary>What one run of the rollup pipeline did.</summary>
+public sealed record KpiRollupResultDto(DateOnly FirstDay, DateOnly LastDay, int Days, int RowsWritten, DateTime RanAtUtc);
