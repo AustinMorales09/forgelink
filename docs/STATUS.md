@@ -48,7 +48,7 @@ Legend: ✅ verified by running it · 🧪 covered by automated tests · 📝 wr
 | OT simulator (5 machines over MQTT, breakdowns with reason codes) | ✅ |
 | 71 unit + 21 integration tests | ✅ all passing |
 | GitHub Actions CI (build with warnings-as-errors, tests, vulnerable-package gate, MAUI Android) | ✅ green since the first push |
-| Dockerfiles + `docker-compose.yml` (SQL Server, Mosquitto) + `tools/smoke/stack-smoke.sh`, run by the CI `stack` job | 📝 first run happens on the next push (no Docker on the dev machine) |
+| Dockerfiles + `docker-compose.yml` (SQL Server, Mosquitto) + `tools/smoke/stack-smoke.sh`, run by the CI `stack` job | ✅ 10/10 checks green in CI since 2026-11-17 (no Docker on the dev machine, so CI is where it runs) |
 
 ### Known limitations in v0.1
 * Schema is created with `EnsureCreated`; there are no EF migrations yet. Changing the model means deleting the dev database (v0.2 added `DailyMachineKpis`, so delete `forgelink.db` once after upgrading).
