@@ -48,9 +48,9 @@ counts_arriving() {
 }
 eventually 180 "line KPIs (SQL Server Pareto stored procedure) include simulated production" counts_arriving
 
-# A material adjustment is mirrored to the ERP through the transactional outbox.
+# A material adjustment (supervisor-only; operators get 403 by design) is mirrored to the ERP through the outbox.
 before=$(api "$BASE/api/integration/health" | jq .sentLastHour)
-api -X POST "$BASE/api/inventory/adjustments" \
+supervisor -X POST "$BASE/api/inventory/adjustments" \
   -H "Content-Type: application/json" -H "Idempotency-Key: smoke-$(date +%s)" \
   -d '{"sku":"PKG-TRAY-24","lotNumber":"","location":"FG-01","quantityDelta":1,"reasonCode":"FOUND"}' >/dev/null \
   && ok "inventory adjustment accepted (Idempotency-Key)" || fail "inventory adjustment"
